@@ -13,6 +13,13 @@
     
     # Keybinds managed manually in dotfiles (see ax-shell-module/README.md)
     keybinds.mode = "disabled";
+    
+    # Matugen template for rofi colors
+    matugen.config = ''
+      [templates.rofi]
+      input_path = "~/.config/rofi/colors.rasi.template"
+      output_path = "~/.config/rofi/colors.rasi"
+    '';
   };
 
   # Enable X server for session management  
@@ -28,6 +35,7 @@
     QT_QPA_PLATFORM = "wayland";
     GDK_BACKEND = "wayland";
     QT_QPA_PLATFORMTHEME = "qt6ct";
+    SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/gnupg/S.gpg-agent.ssh";
   };
 
   # Essential desktop services

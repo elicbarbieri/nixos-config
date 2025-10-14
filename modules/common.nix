@@ -1,6 +1,11 @@
 # Common configuration shared across all hosts
 { pkgs, ... }:
 
+let
+  pinentry-rofi-themed = pkgs.writeShellScriptBin "pinentry-rofi-themed" ''
+    exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
+  '';
+in
 {
   # Shared settings across ALL hosts
   nixpkgs.config.allowUnfree = true;
@@ -34,6 +39,7 @@
     fd
     fzf
     gnupg
+    pinentry-rofi-themed
     ripgrep
     tree
     
@@ -100,6 +106,7 @@
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
+    pinentryPackage = pinentry-rofi-themed;
   };
 
   # Common services all hosts need

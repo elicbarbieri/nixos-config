@@ -1,0 +1,54 @@
+@import "colors.rasi"
+
+* {
+  font: "Sans 10";
+  border-radius: 8px;
+  background-color: transparent;
+  text-color: @fg;
+}
+
+configuration {
+  show-icons: false;
+}
+
+window {
+  transparency: "real";
+  background-color: @bg;
+  border: 2px;
+  border-color: @primary;
+  border-radius: @border-radius;
+  padding: 16px;
+  width: 550px;
+}
+
+mainbox {
+  children: [message, inputbar];
+  spacing: 15px;
+}
+
+message {
+  background-color: @surface;
+  border-radius: @border-radius;
+  padding: 10px;
+}
+
+textbox {
+  text-color: @fg;
+}
+
+inputbar {
+  background-color: @surface;
+  border-radius: @border-radius;
+  padding: 10px;
+  children: [prompt, entry];
+  spacing: 10px;
+}
+
+prompt {
+  text-color: @primary;
+}
+
+entry {
+  placeholder: "";
+  text-color: @fg;
+}

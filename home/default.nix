@@ -16,6 +16,7 @@ in
     ".config/neofetch".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/neofetch";
     ".config/nushell".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/nushell";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/nvim";
+    ".config/rofi".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/rofi";
     ".config/ruff".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/ruff";
     ".config/gamemode.ini".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/gamemode/gamemode.ini";
   };
