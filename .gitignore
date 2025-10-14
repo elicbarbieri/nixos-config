@@ -1,0 +1,17 @@
+# Build artifacts
+result
+result-*
+
+# VM artifacts
+*.qcow2
+*.qcow2.*
+
+# Nix build outputs
+.direnv/
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
