@@ -161,23 +161,17 @@ def l [dir?: path] {
     } | select name type mode user size modified accessed 
 }
 
-# Load Atuin integration
-# Atuin integration handled by home-manager programs.atuin.enableNushellIntegration
-
 # Load Scripts
 source ~/.config/nushell/scripts/plugins.nu
 
 # Load your existing keyboard manager script
 alias kb = nu ~/.config/nushell/scripts/keyboard-manager.nu
 
-
-# Completions handled by home-manager programs.atuin and programs.carapace
+# Load completions
 source ~/.config/nushell/completions/ruff.nu  
 source ~/.config/nushell/completions/ty.nu
 source ~/.config/nushell/completions/uv.nu
 use completions *
-
-# NixOS handles cargo PATH automatically - no manual setup needed
 
 # Plugin configuration
 $env.config.plugin_gc = {

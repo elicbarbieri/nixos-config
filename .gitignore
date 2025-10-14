@@ -9,6 +9,9 @@ result-*
 # Nix build outputs
 .direnv/
 
+# History Files
+history.txt
+
 # Editor/IDE
 .vscode/
 .idea/

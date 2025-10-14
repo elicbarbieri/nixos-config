@@ -67,12 +67,12 @@
       };
     };
     
-    # gaming = {
-    #   inheritParentConfig = true;
-    #   configuration = {
-    #     imports = [ ../../specializations/gaming.nix ];
-    #   };
-    # };
+    gaming = {
+      inheritParentConfig = true;
+      configuration = {
+        imports = [ ../../specializations/gaming.nix ];
+      };
+    };
   };
 
 

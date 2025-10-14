@@ -1,92 +1,43 @@
 # Gaming Specialization
-# Maximum performance configuration for gaming and streaming
+# Maximum performance configuration for gaming
 
 { config, pkgs, lib, ... }:
 
 {
-  # Performance CPU governor
-  powerManagement.cpuFreqGovernor = "performance";
+  # Allow insecure packages required by Steam
+  nixpkgs.config.permittedInsecurePackages = [
+    "mbedtls-2.28.10"
+  ];
 
-  # Enable TLP for power management
-  services.tlp.enable = true;
-
-  # TLP performance optimization
-  services.tlp.settings = {
-    # CPU scaling
-    CPU_SCALING_GOVERNOR_ON_AC = "performance";
-    CPU_SCALING_GOVERNOR_ON_BAT = "performance";
-    
-    # Intel P-State preferences
-    CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
-    CPU_ENERGY_PERF_POLICY_ON_BAT = "performance";
-    
-    # Platform profile
-    PLATFORM_PROFILE_ON_AC = "performance";
-    PLATFORM_PROFILE_ON_BAT = "performance";
-    
-    # CPU boost
-    CPU_BOOST_ON_AC = 1;
-    CPU_BOOST_ON_BAT = 1;
-    
-    # CPU HWP hints
-    CPU_HWP_DYN_BOOST_ON_AC = 1;
-    CPU_HWP_DYN_BOOST_ON_BAT = 1;
-    
-    # Minimal PCIe power management
-    PCIE_ASPM_ON_AC = "default";
-    PCIE_ASPM_ON_BAT = "default";
-    
-    # Disable runtime power management for performance
-    RUNTIME_PM_ON_AC = "on";
-    RUNTIME_PM_ON_BAT = "on";
-    
-    # WiFi performance
-    WIFI_PWR_ON_AC = "off";
-    WIFI_PWR_ON_BAT = "off";
-    
-    # Disable USB autosuspend for gaming peripherals
-    USB_AUTOSUSPEND = 0;
-    
-    # Disk performance
-    DISK_APM_LEVEL_ON_AC = "254";
-    DISK_APM_LEVEL_ON_BAT = "254";
-    
-    # SATA link power management
-    SATA_LINKPWR_ON_AC = "max_performance";
-    SATA_LINKPWR_ON_BAT = "max_performance";
-  };
-
-  # NVIDIA performance - always use NVIDIA GPU if present
-  hardware.nvidia = lib.mkIf (config.hardware.nvidia.prime ? nvidiaBusId) {
+  # NVIDIA performance - force sync mode for maximum gaming performance
+  hardware.nvidia = {
     powerManagement.enable = lib.mkForce true;
     powerManagement.finegrained = lib.mkForce false;
     
     prime = {
       offload.enable = lib.mkForce false;
+      offload.enableOffloadCmd = lib.mkForce false;
       sync.enable = lib.mkForce true;
     };
   };
 
-  # Gaming-specific kernel parameters
+  # High-impact kernel parameters for gaming performance
   boot.kernelParams = [
-    # Disable CPU mitigations for performance (security trade-off)
-    "mitigations=off"
-    
-    # Intel graphics performance
-    "i915.enable_dc=0"
-    "i915.enable_psr=0"
-    
-    # CPU performance
-    "intel_idle.max_cstate=1"
-    
-    # Memory performance
-    "transparent_hugepage=always"
-    
-    # Scheduler optimization for gaming
-    "preempt=voluntary"
+    "mitigations=off"  # Disable CPU mitigations for max FPS
+    "i915.enable_dc=0"  # Disable Intel display power saving
   ];
 
-  # Additional gaming packages
+  # TLP performance settings for gaming
+  services.tlp = {
+    enable = true;
+    settings = {
+      CPU_BOOST_ON_AC = 1;
+      CPU_BOOST_ON_BAT = 1;
+      USB_AUTOSUSPEND = 0;  # Prevent gaming peripheral disconnects
+    };
+  };
+
+  # Gaming packages
   environment.systemPackages = with pkgs; [
     steam
     lutris
@@ -94,33 +45,28 @@
     gamemode
     gamescope
     mangohud
-    goverlay
+    
+    # Minecraft dependencies
+    (modrinth-app.overrideAttrs (oldAttrs: {
+      buildCommand =
+        ''
+          gappsWrapperArgs+=(
+             --set GDK_BACKEND x11
+             --set WEBKIT_DISABLE_DMABUF_RENDERER 0
+             --prefix XDG_DATA_DIRS : "${gtk3}/share/gsettings-schemas/${gtk3.name}"
+          )
+        ''
+        + oldAttrs.buildCommand;
+    }))
+    jdk
+    glfw
   ];
 
-
-
-  # Enable Steam
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
   };
 
-  # Enable GameMode
   programs.gamemode.enable = true;
-
-  # Performance optimizations
-  boot.kernel.sysctl = {
-    # Gaming-specific optimizations
-    "kernel.sched_autogroup_enabled" = 0;
-    "kernel.sched_child_runs_first" = 0;
-  };
-
-  # Increase inotify limits for development tools
-  boot.kernel.sysctl."fs.inotify.max_user_watches" = 1048576;
-
-  services = {
-    # Disable power-saving services that might interfere
-    power-profiles-daemon.enable = false;
-  };
 }
