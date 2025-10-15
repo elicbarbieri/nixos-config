@@ -50,7 +50,6 @@ in
     pavucontrol
 
     # TUI Apps
-    opencode
     lazydocker
     lazygit
     btop
@@ -64,6 +63,7 @@ in
     cargo
     gcc
     nodejs
+    bun
     go
 
     # Work & Productivity
@@ -85,15 +85,12 @@ in
   };
  
   environment = {
-    # Adding cargo home so cargo install __ will work
+    # System-level environment variables (used by system services)
     variables = {
       CARGO_HOME = "$HOME/.cargo";
     };
-    # .cargo/bin is for cargo install -- .local/bin is for uv tool install
-    extraInit = ''
-      export PATH="$HOME/.cargo/bin:$PATH"
-      export PATH="$HOME/.local/bin:$PATH"
-    '';
+    # Note: User PATH is now managed by home-manager (see home/default.nix)
+    # and nushell (see dotfiles/nushell/env.nu)
   };
 
   # Common services all hosts need

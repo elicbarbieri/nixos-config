@@ -1,5 +1,7 @@
 # Enhanced Nushell Configuration
 
+source ~/.config/nushell/scripts/atuin.nu
+
 # Enable Vi mode for readline
 $env.config.edit_mode = "vi"
 
@@ -25,19 +27,6 @@ $env.config.keybindings = [
                 { send: menunext }
             ]
         }
-    }
-    
-    # History search with Atuin (replaces basic history menu)
-    {
-        name: atuin_search
-        modifier: control
-        keycode: char_r
-        mode: [emacs, vi_insert, vi_normal]
-        event: [
-            { edit: Clear }
-            { edit: InsertString value: "commandline (atuin search --cmd-only | decode utf-8 | str trim)" }
-            { send: Enter }
-        ]
     }
     
     # Quick directory navigation with fzf
@@ -108,7 +97,11 @@ $env.config.completions = {
     external: {
         enable: true
         max_results: 100
-        completer: null
+        completer: {|spans|
+            carapace $spans.0 nushell ...$spans
+            | from json
+            | get -o value
+        }
     }
     use_ls_colors: true
 }

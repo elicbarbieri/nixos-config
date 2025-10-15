@@ -1,18 +1,19 @@
 use std "path add"
 
-# Nushell config
+# Nushell environment configuration
+# Note: Nushell doesn't read bash session vars, so we manage PATH here
+# Keep this in sync with home/default.nix sessionPath
+
+# Environment Variables
 $env.config.show_banner = false
 $env.config.buffer_editor = "nvim"
 $env.EDITOR = "nvim"
 $env.PAGER = "bat"
 $env.MANPAGER = "bat"
 
-# Path Config - NixOS handles all paths automatically
-# Only add user-specific paths that aren't managed by NixOS
+# Path Configuration
+# Add user-specific paths (keep in sync with home/default.nix)
 $env.PATH = ($env.PATH | split row (char esep))
+path add $"($env.HOME)/.cargo/bin"
 path add $"($env.HOME)/.local/bin"
-
-# Environment Variables - NixOS handles JAVA_HOME automatically
-# Removed hardcoded Ubuntu Java path
-
-# Auto-completion setup handled by NixOS package management
+path add $"($env.HOME)/.bun/bin"
