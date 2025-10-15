@@ -17,7 +17,7 @@
     # Keybinds managed manually in dotfiles (see ax-shell-module/README.md)
     keybinds.mode = "disabled";
     
-    # Matugen templates for rofi, GTK, and Qt6 theming
+    # Matugen templates for rofi, GTK, and Kvantum theming
     matugen.config = ''
       [templates.rofi]
       input_path = "~/.config/rofi/colors.rasi.template"
@@ -31,9 +31,9 @@
       input_path = "~/nixos-config/dotfiles/gtk/gtk-4.0/gtk.css.template"
       output_path = "~/.config/gtk-4.0/gtk.css"
       
-      [templates.qt6-colors]
-      input_path = "~/.config/qt6ct/qss/colors.qss.template"
-      output_path = "~/.config/qt6ct/qss/colors.qss"
+      [templates.kvantum-theme]
+      input_path = "~/.config/Kvantum/MatugenDynamic/MatugenDynamic.kvconfig.template"
+      output_path = "~/.config/Kvantum/MatugenDynamic/MatugenDynamic.kvconfig"
     '';
   };
 
@@ -101,9 +101,17 @@
   # Networking
   networking.networkmanager.enable = true;
 
-  # Qt6 theming
+  # Theming packages (configuration via dotfiles)
   environment.systemPackages = with pkgs; [
+    # Qt theming - config handled by qt6ct dotfiles
     qt6ct
+    libsForQt5.qtstyleplugin-kvantum  # Qt5 Kvantum support
+    kdePackages.qtstyleplugin-kvantum # Qt6 Kvantum support
+    catppuccin-kvantum                # Catppuccin Kvantum theme
+    
+    # GTK theming - config handled by gtk dotfiles
+    adw-gtk3                          # Modern GTK3 theme (libadwaita port)
+    adwaita-icon-theme                # Adwaita icons (required for libadwaita symbolic icons)
   ];
 
   # Fonts for Ax-Shell and system

@@ -7,16 +7,14 @@ let
   '';
 in
 {
-  # Shared settings across ALL hosts
   nixpkgs.config.allowUnfree = true;
   time.timeZone = "America/Los_Angeles";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Common user configuration with nushell as default shell
   users.users.elicb = {
     isNormalUser = true;
     description = "Eli Barbieri";
-    shell = pkgs.nushell;  # Global default - can be overridden per host
+    shell = pkgs.nushell; 
     extraGroups = [ "networkmanager" "wheel" ];  # Base groups
   };
 
@@ -63,8 +61,12 @@ in
     cargo
     gcc
     nodejs
+    python3
     bun
     go
+
+    kubectl
+    helm
 
     # Work & Productivity
     super-productivity

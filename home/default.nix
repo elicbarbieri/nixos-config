@@ -31,6 +31,7 @@ in
     ".config/gtk-4.0".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/gtk/gtk-4.0";
     ".config/hypr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/hypr";
     ".config/kitty".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/kitty";
+    ".config/Kvantum".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/Kvantum";
     ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/lazygit";
     ".config/nushell".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/nushell";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesPath}/nvim";
