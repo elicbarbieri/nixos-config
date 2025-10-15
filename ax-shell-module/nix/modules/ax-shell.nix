@@ -75,6 +75,23 @@ in
       '';
     };
     
+    enableGtk = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether to enable GTK configuration through home-manager.
+        
+        When true (default):
+        - Configures gtk.cursorTheme in home-manager
+        - Manages ~/.config/gtk-{3,4}.0/settings.ini files
+        
+        When false:
+        - Only sets home.pointerCursor (cursor still works via X/Wayland)
+        - Allows manual GTK configuration management
+        - Useful when using external GTK theming (e.g., matugen-generated themes)
+      '';
+    };
+    
     keybinds = lib.mkOption {
       type = lib.types.submodule {
         options = {
@@ -386,7 +403,7 @@ in
       home.packages = [ pkgs.bibata-cursors ];
       
       # Configure GTK cursor theme
-      gtk = {
+      gtk = lib.mkIf cfg.enableGtk {
         enable = true;
         cursorTheme = {
           name = "Bibata-Modern-Classic";
@@ -397,7 +414,7 @@ in
       
       # Configure pointer cursor for all environments
       home.pointerCursor = {
-        gtk.enable = true;
+        gtk.enable = cfg.enableGtk;
         name = "Bibata-Modern-Classic";
         package = pkgs.bibata-cursors;
         size = 24;

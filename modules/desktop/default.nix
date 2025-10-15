@@ -11,14 +11,29 @@
     dockAlwaysOccluded = true;
     barWorkspaceShowNumber = true;
     
+    # Disable GTK management - we handle it ourselves with matugen
+    enableGtk = false;
+    
     # Keybinds managed manually in dotfiles (see ax-shell-module/README.md)
     keybinds.mode = "disabled";
     
-    # Matugen template for rofi colors
+    # Matugen templates for rofi, GTK, and Qt6 theming
     matugen.config = ''
       [templates.rofi]
       input_path = "~/.config/rofi/colors.rasi.template"
       output_path = "~/.config/rofi/colors.rasi"
+      
+      [templates.gtk3-css]
+      input_path = "~/nixos-config/dotfiles/gtk/gtk-3.0/gtk.css.template"
+      output_path = "~/.config/gtk-3.0/gtk.css"
+      
+      [templates.gtk4-css]
+      input_path = "~/nixos-config/dotfiles/gtk/gtk-4.0/gtk.css.template"
+      output_path = "~/.config/gtk-4.0/gtk.css"
+      
+      [templates.qt6-colors]
+      input_path = "~/.config/qt6ct/qss/colors.qss.template"
+      output_path = "~/.config/qt6ct/qss/colors.qss"
     '';
   };
 
@@ -85,6 +100,11 @@
 
   # Networking
   networking.networkmanager.enable = true;
+
+  # Qt6 theming
+  environment.systemPackages = with pkgs; [
+    qt6ct
+  ];
 
   # Fonts for Ax-Shell and system
   fonts.packages = with pkgs; [

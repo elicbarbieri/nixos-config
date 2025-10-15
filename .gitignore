@@ -12,6 +12,12 @@ result-*
 # History Files
 history.txt
 
+
+# Matugen Colors
+colors.css
+gtk.css
+colors.qss
+
 # Editor/IDE
 .vscode/
 .idea/

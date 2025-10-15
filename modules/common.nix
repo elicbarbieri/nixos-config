@@ -113,7 +113,14 @@ in
   };
 
   system.stateVersion = "25.05";
-  boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot = {
+    enable = true;
+    configurationLimit = 18;
+    consoleMode = "auto";
+  };
+
+  system.nixos.label = "";  # Disables the majority of the machine/os ID in the systemd boot entries
+
   boot.loader.efi.canTouchEfiVariables = true;
   
 }
