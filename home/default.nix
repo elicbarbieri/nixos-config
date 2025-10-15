@@ -49,4 +49,25 @@ in
       };
     };
   };
+
+  systemd.user.services.hypridle = {
+    Unit = {
+      Description = "Hyprland idle daemon";
+      Documentation = "https://wiki.hyprland.org/Hypr-Ecosystem/hypridle";
+      After = [ "graphical-session.target" ];
+      Wants = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.hypridle}/bin/hypridle";
+      Restart = "on-failure";
+      RestartSec = "5";
+    };
+
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
 }

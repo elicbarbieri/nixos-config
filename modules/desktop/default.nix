@@ -83,6 +83,15 @@
     # System services
     dbus.enable = true;
     udisks2.enable = true;
+
+    # Logind configuration for lid switch handling
+    logind.settings = {
+      Login = {
+        HandleLidSwitch = "ignore";
+        HandleLidSwitchDocked = "ignore";
+        HandleLidSwitchExternalPower = "ignore";
+      };
+    };
   };
 
   # Hardware support
@@ -100,6 +109,9 @@
 
   # Networking
   networking.networkmanager.enable = true;
+
+  # Enable user lingering for systemd user services
+  users.users.elicb.linger = true;
 
   # Theming packages (configuration via dotfiles)
   environment.systemPackages = with pkgs; [
