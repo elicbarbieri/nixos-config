@@ -52,6 +52,15 @@ $env.config.keybindings = [
             cmd: "xdg-open ."
         }
     }
+
+    # Atuin Control + R search
+    {
+      name: atuin
+      modifier: control
+      keycode: char_r
+      mode: [emacs, vi_normal, vi_insert]
+      event: { send: executehostcommand cmd: (_atuin_search_cmd) }
+    }
 ]
 
 # Enhanced history configuration (modified for Atuin compatibility)

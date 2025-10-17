@@ -1,5 +1,4 @@
-# Pulled Directly from Atuin Repo...  Will need to manually update over time
-
+# Source this in your ~/.config/nushell/config.nu
 # minimum supported version = 0.93.0
 module compat {
   export def --wrapped "random uuid -v 7" [...rest] { atuin uuid }
@@ -16,7 +15,7 @@ hide-env -i ATUIN_HISTORY_ID
 let ATUIN_KEYBINDING_TOKEN = $"# (random uuid)"
 
 let _atuin_pre_execution = {||
-    if ($nu | get -o history-enabled) == false {
+    if ($nu | get history-enabled?) == false {
         return
     }
     let cmd = (commandline)
@@ -66,9 +65,9 @@ $env.config = (
     $env.config | upsert hooks (
         $env.config.hooks
         | upsert pre_execution (
-            $env.config.hooks | get -o pre_execution | default [] | append $_atuin_pre_execution)
+            $env.config.hooks | get pre_execution? | default [] | append $_atuin_pre_execution)
         | upsert pre_prompt (
-            $env.config.hooks | get -o pre_prompt | default [] | append $_atuin_pre_prompt)
+            $env.config.hooks | get pre_prompt? | default [] | append $_atuin_pre_prompt)
     )
 )
 
@@ -86,3 +85,22 @@ $env.config = (
         }
     )
 )
+
+$env.config = (
+    $env.config | upsert keybindings (
+        $env.config.keybindings
+        | append {
+            name: atuin
+            modifier: none
+            keycode: up
+            mode: [emacs, vi_normal, vi_insert]
+            event: {
+                until: [
+                    {send: menuup}
+                    {send: executehostcommand cmd: (_atuin_search_cmd '--shell-up-key-binding') }
+                ]
+            }
+        }
+    )
+)
+

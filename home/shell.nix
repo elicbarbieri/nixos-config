@@ -3,12 +3,10 @@
 {
   programs.carapace = {
     enable = true;
-    enableNushellIntegration = true;
   };
 
   programs.atuin = {
     enable = true;
-    enableNushellIntegration = true;
     settings = {
       auto_sync = true;
       sync_frequency = "10m";
