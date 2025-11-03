@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
     owner = "Axenide";
     repo = "Ax-Shell";
     rev = "main";
-    sha256 = "sha256-vUnG2fv3O1IscEDN4nyILGE7UlIxYyS7HGQoYxSXw6k=";
+    sha256 = "sha256-uF7lT3nl/96K6EXFrWKpsaxJSPxHH0Q5ev8Z7QR7glw=";
   };
 
   installPhase = ''

@@ -40,6 +40,10 @@ in
     pinentry-rofi-themed
     ripgrep
     tree
+    # Networking Utils
+    traceroute
+    arp-scan
+    iperf3
     
     # Core GUI Apps
     brave

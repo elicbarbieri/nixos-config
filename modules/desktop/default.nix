@@ -116,7 +116,7 @@
   # Theming packages (configuration via dotfiles)
   environment.systemPackages = with pkgs; [
     # Qt theming - config handled by qt6ct dotfiles
-    qt6ct
+    qt6Packages.qt6ct
     libsForQt5.qtstyleplugin-kvantum  # Qt5 Kvantum support
     kdePackages.qtstyleplugin-kvantum # Qt6 Kvantum support
     catppuccin-kvantum                # Catppuccin Kvantum theme
