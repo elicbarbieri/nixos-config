@@ -1,6 +1,11 @@
 # Desktop environment module - Hyprland + Ax-Shell integration
 { pkgs, ... }:
 
+let
+  pinentry-rofi-themed = pkgs.writeShellScriptBin "pinentry-rofi-themed" ''
+    exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
+  '';
+in
 {
   # Ax-shell configuration - only the actual non-default settings needed
   programs.ax-shell = {
@@ -107,14 +112,24 @@
     rtkit.enable = true;
   };
 
-  # Networking
-  networking.networkmanager.enable = true;
 
-  # Enable user lingering for systemd user services
-  users.users.elicb.linger = true;
-
-  # Theming packages (configuration via dotfiles)
   environment.systemPackages = with pkgs; [
+    
+    # Core HID deps
+    keyd
+    pinentry-rofi-themed
+    brightnessctl
+
+    # Core GUI Apps
+    brave
+    nautilus
+    spotify
+    pavucontrol
+
+    # Work & Productivity
+    super-productivity
+    slack
+
     # Qt theming - config handled by qt6ct dotfiles
     qt6Packages.qt6ct
     libsForQt5.qtstyleplugin-kvantum  # Qt5 Kvantum support
@@ -125,6 +140,13 @@
     adw-gtk3                          # Modern GTK3 theme (libadwaita port)
     adwaita-icon-theme                # Adwaita icons (required for libadwaita symbolic icons)
   ];
+
+  # GPG agent configuration
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = true;
+    pinentryPackage = pinentry-rofi-themed;
+  };
 
   # Fonts for Ax-Shell and system
   fonts.packages = with pkgs; [
@@ -141,6 +163,20 @@
       sansSerif = [ "JetBrainsMono Nerd Font" ];
       serif = [ "Noto Serif" ];
       emoji = [ "Noto Color Emoji" ];
+    };
+  };
+
+  systemd.user.services.hypridle = {
+    description = "Hyprland idle daemon";
+    documentation = [ "https://wiki.hyprland.org/Hypr-Ecosystem/hypridle" ];
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.hypridle}/bin/hypridle";
+      Restart = "on-failure";
+      RestartSec = "5";
     };
   };
 }

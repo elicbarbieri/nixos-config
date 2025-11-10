@@ -50,7 +50,7 @@ python3Packages.buildPythonApplication rec {
     owner = "Axenide";
     repo = "Ax-Shell";
     rev = "main";
-    sha256 = "sha256-uF7lT3nl/96K6EXFrWKpsaxJSPxHH0Q5ev8Z7QR7glw="; 
+    sha256 = "sha256-8rKA8fLeiK7OaJX901bj6ppZoYrTBwfWn6BFLzylVPQ="; 
   };
 
   # Core Python dependencies

@@ -72,14 +72,14 @@
     low-power = {
       inheritParentConfig = true;
       configuration = {
-        imports = [ ../../specializations/low-power.nix ];
+        imports = [ ../../modules/specializations/low-power.nix ];
       };
     };
     
     gaming = {
       inheritParentConfig = true;
       configuration = {
-        imports = [ ../../specializations/gaming.nix ];
+        imports = [ ../../modules/specializations/gaming.nix ];
       };
     };
   };

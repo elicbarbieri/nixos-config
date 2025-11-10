@@ -2,9 +2,7 @@
 { pkgs, ... }:
 
 let
-  pinentry-rofi-themed = pkgs.writeShellScriptBin "pinentry-rofi-themed" ''
-    exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
-  '';
+  commonPkgs = (import ./base-packages.nix { inherit pkgs; }).common;
 in
 {
   nixpkgs.config.allowUnfree = true;
@@ -20,63 +18,9 @@ in
 
   environment.shells = [ pkgs.nushell ];
   
-  # Common system packages
-  environment.systemPackages = with pkgs; [
-    # Shell & Terminal
-    kitty
-    nushell
-    atuin
-    carapace
-
-    # Core HID deps
-    keyd
-
-    # Utils
-    bat
-    brightnessctl
-    fd
-    fzf
-    gnupg
-    pinentry-rofi-themed
-    ripgrep
-    tree
-    # Networking Utils
-    traceroute
-    arp-scan
-    iperf3
-    
-    # Core GUI Apps
-    brave
-    nautilus
-    spotify
-    pavucontrol
-
-    # TUI Apps
-    lazydocker
-    lazygit
-    btop
-    
-    # Development
-    neovim
-    tmux
-    git
-    uv
-    rustc
-    cargo
-    gcc
-    nodejs
-    python3
-    bun
-    go
-
-    kubectl
-    helm
-
-    # Work & Productivity
-    super-productivity
-    slack
-  ];
-
+  # Common system packages (from lib/packages.nix)
+  # Note: neovim is now managed by nixvim in home-manager
+  environment.systemPackages = commonPkgs;
   # uv needs basic libs to run downloaded python executables (.venv/bin/python)
   programs.nix-ld = {
     enable = true;
@@ -87,6 +31,11 @@ in
       curl
       libz
       glibc
+      # ML/AI libraries for VLLM and PyTorch
+      # glib
+      # libGL
+      # libGLU
+      # linuxPackages.nvidia_x11
     ];
   };
  
@@ -99,18 +48,15 @@ in
     # and nushell (see dotfiles/nushell/env.nu)
   };
 
-  # Common services all hosts need
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    substituters = ["https://hyprland.cachix.org"];
+    trusted-substituters = ["https://hyprland.cachix.org"];
+    trusted-public-keys = ["hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="];
+  };
 
   # Performance CPU governor for development
   powerManagement.cpuFreqGovernor = "performance";
-
-  # GPG agent configuration
-  programs.gnupg.agent = {
-    enable = true;
-    enableSSHSupport = true;
-    pinentryPackage = pinentry-rofi-themed;
-  };
 
   # Common services all hosts need
   services = {
@@ -119,6 +65,9 @@ in
   };
 
   system.stateVersion = "25.05";
+
+  networking.networkmanager.enable = true;
+
   boot.loader.systemd-boot = {
     enable = true;
     configurationLimit = 18;

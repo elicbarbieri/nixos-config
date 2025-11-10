@@ -123,37 +123,19 @@ $env.config.cursor_shape = {
 }
 
 
-# Enhanced aliases with better functionality
-alias la = ls -la
-alias ll = ls -l
-alias lt = ls -la | sort-by modified | reverse
-alias lz = ls -la | sort-by size | reverse
 
 # Development aliases
-alias k = kubectl
 alias kgp = kubectl get pods
 alias kgd = kubectl get deployments
 alias d = docker
 alias dc = docker compose
-alias g = git
 alias gs = git status
-alias ga = git add
 alias wt = git worktree
-
-# System shortcuts
-alias cat = bat
-alias grep = rg 
-alias find = fd
 
 # Quick navigation
 alias .. = cd ..
 alias ... = cd ../..
 alias .... = cd ../../..
-alias ~ = cd ~
-
-# Git dotfiles
-alias dotfiles = git --git-dir ~/dotfiles --work-tree ~
-alias lazydotfiles = lazygit -g ~/dotfiles/ -w ~
 
 # Utility functions
 def l [dir?: path] {
