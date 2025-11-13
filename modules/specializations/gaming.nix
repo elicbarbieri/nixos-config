@@ -1,7 +1,15 @@
 # Gaming Specialization
 # Maximum performance configuration for gaming
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, nixpkgs-modrinth, ... }:
+
+let
+  # Pin modrinth-app to 0.9.3 from older nixpkgs due to regression in latest version
+  pkgs-modrinth = import nixpkgs-modrinth {
+    system = pkgs.system;
+    config.allowUnfree = true;
+  };
+in
 
 {
   # Allow insecure packages required by Steam
@@ -46,8 +54,8 @@
     gamescope
     mangohud
     
-    # Minecraft dependencies
-    (modrinth-app.overrideAttrs (oldAttrs: {
+    # Minecraft dependencies (pinned to 0.9.3 due to regression in latest)
+    (pkgs-modrinth.modrinth-app.overrideAttrs (oldAttrs: {
       buildCommand =
         ''
           gappsWrapperArgs+=(

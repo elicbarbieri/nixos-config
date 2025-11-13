@@ -42,15 +42,6 @@
           # JavaScript/TypeScript
           ts_ls.enable = true;
           
-          # Go
-          gopls.enable = true;
-          
-          # Lua
-          lua_ls = {
-            enable = true;
-            settings.telemetry.enable = false;
-          };
-          
           # JSON/YAML
           jsonls.enable = true;
           yamlls.enable = true;
@@ -76,7 +67,6 @@
             json = ["prettier"];
             yaml = ["prettier"];
             markdown = ["prettier"];
-            lua = ["stylua"];
             bash = ["shfmt"];
           };
           format_on_save = {

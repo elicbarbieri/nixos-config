@@ -1,6 +1,9 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    # Pinned nixpkgs for modrinth-app 0.9.3 (working version before regression)
+    # Commit from nixos-unstable with modrinth-app 0.9.3
+    nixpkgs-modrinth.url = "github:nixos/nixpkgs/5633bcff0c6162b9e4b5f1264264611e950c8ec7";
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     ax-shell.url = "path:./ax-shell-module/";
@@ -12,7 +15,7 @@
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, ... }:
+  outputs = { self, nixpkgs, nixpkgs-modrinth, hyprland, ax-shell, home-manager, disko, nixvim, ... }:
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -67,7 +70,7 @@
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];
-        specialArgs = { inherit hyprland self ax-shell nixvim; };
+        specialArgs = { inherit hyprland self ax-shell nixvim nixpkgs-modrinth; };
       };
 
       # Home Server configuration
@@ -82,7 +85,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.elicb = import ./home/server.nix;
+            home-manager.users.elicb = import ./home/base.nix;
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];

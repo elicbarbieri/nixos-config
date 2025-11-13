@@ -1,8 +1,8 @@
 # Common configuration shared across all hosts
-{ pkgs, ... }:
+{ pkgs, nixvim, ... }:
 
 let
-  commonPkgs = (import ./base-packages.nix { inherit pkgs; }).common;
+  commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim; }).common;
 in
 {
   nixpkgs.config.allowUnfree = true;
