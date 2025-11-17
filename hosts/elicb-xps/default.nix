@@ -60,6 +60,7 @@
 
   # Host-specific services
   virtualisation.docker.enable = true;
+  hardware.nvidia-container-toolkit.enable = true;
   
   services = {
     thermald.enable = true;

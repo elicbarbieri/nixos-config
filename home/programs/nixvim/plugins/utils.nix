@@ -76,6 +76,20 @@
     
   # Keymaps for utils
   keymaps = [
+      # Flash.nvim (LazyVim defaults)
+      {
+        mode = ["n" "x" "o"];
+        key = "s";
+        action = "<cmd>lua require('flash').jump()<cr>";
+        options.desc = "Flash";
+      }
+      {
+        mode = ["n" "x" "o"];
+        key = "S";
+        action = "<cmd>lua require('flash').treesitter()<cr>";
+        options.desc = "Flash Treesitter";
+      }
+      
       # Diagnostics/Trouble (LazyVim <leader>x namespace)
       {
         mode = "n";

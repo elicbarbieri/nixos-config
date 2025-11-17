@@ -50,7 +50,7 @@ python3Packages.buildPythonApplication rec {
     owner = "Axenide";
     repo = "Ax-Shell";
     rev = "main";
-    sha256 = "sha256-8rKA8fLeiK7OaJX901bj6ppZoYrTBwfWn6BFLzylVPQ="; 
+    sha256 = "sha256-3C8XiGeAPci0H+9y7erL34bBbOiEmKTRpGErRkA/9oY=";
   };
 
   # Core Python dependencies
@@ -59,7 +59,7 @@ python3Packages.buildPythonApplication rec {
     pycairo dbus-python
     # Standard Python libraries
     loguru psutil click
-    # Ax-Shell specific deps  
+    # Ax-Shell specific deps
     ijson numpy pillow pywayland requests setproctitle toml watchdog
     # Custom fabric package - CRITICAL for GUI framework (provides pygobject3)
     (callPackage ./python-fabric.nix {})
@@ -100,30 +100,30 @@ python3Packages.buildPythonApplication rec {
   # Don't build - this is a pure Python application
   dontBuild = true;
   dontConfigure = true;
-  
+
   installPhase = ''
     runHook preInstall
-    
+
     mkdir -p $out/lib/ax-shell
     cp -r * $out/lib/ax-shell/
-    
+
     # Generate NixOS module configs directly in the nix store
     mkdir -p $out/lib/ax-shell/config
     mkdir -p $out/lib/ax-shell/styles
-    
+
     ${lib.optionalString (moduleConfig != null && ax-shell-lib != null) ''
       # Generate config.json from NixOS module configuration
       cat > $out/lib/ax-shell/config/config.json << 'EOF'
       ${ax-shell-lib.generateConfigFile moduleConfig}
       EOF
     ''}
-    
+
     # Patch ax-shell to use matugen_state file instead of matugen directory
     # This avoids collision: config/matugen/ is a directory (templates), matugen_state is a file (toggle state)
     substituteInPlace $out/lib/ax-shell/config/data.py \
       --replace-fail 'MATUGEN_STATE_FILE = os.path.join(CONFIG_DIR, "matugen")' \
                      'MATUGEN_STATE_FILE = os.path.join(CONFIG_DIR, "matugen_state")'
-    
+
     # Patch settings_utils.py to use nix store paths for assets (not wallpapers)
     # 1. Fix default face icon path (~/.face.icon fallback) - use relative path from config/ dir
     substituteInPlace $out/lib/ax-shell/config/settings_utils.py \
@@ -131,29 +131,29 @@ python3Packages.buildPythonApplication rec {
         f"~/.config/{APP_NAME_CAP}/assets/default.png"
     )' \
                      'default_icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "default.png")'
-    
+
     # 2. Fix notification icon (ax.png) in generated hyprland config - use nix store path
     substituteInPlace $out/lib/ax-shell/config/settings_utils.py \
       --replace-fail '"{home}/.config/{APP_NAME_CAP}/assets/ax.png"' \
                      '"'$out'/lib/ax-shell/assets/ax.png"'
-    
+
     # Patch main.py to make app accessible at module level for fabric-cli exec
     # 1. Add module-level app variable declaration after imports
     sed -i '/^fonts_updated_file = f"{CACHE_DIR}\/fonts_updated"$/a\
 \
 # Module-level app variable for fabric-cli exec access\
 app = None' $out/lib/ax-shell/main.py
-    
+
     # 2. Remove the 'global app' line if it exists (from previous patch attempt)
     sed -i '/^    global app$/d' $out/lib/ax-shell/main.py
-    
+
     # Patch main.css to import colors.css from user's home directory
     ${lib.optionalString (username != null) ''
       substituteInPlace $out/lib/ax-shell/main.css \
         --replace-fail '@import url("./styles/colors.css");' \
                        '@import url("/home/${username}/.config/Ax-Shell/styles/colors.css");'
     ''}
-    
+
     # Create wayland session file
     mkdir -p $out/share/wayland-sessions
     cat > $out/share/wayland-sessions/ax-shell.desktop << EOF
@@ -164,7 +164,7 @@ Exec=ax-shell
 Type=Application
 DesktopNames=Ax-Shell
 EOF
-    
+
     # Back to the original working Python wrapper with runtime setup
     mkdir -p $out/bin
     cat > $out/bin/ax-shell << 'EOF'
@@ -185,7 +185,7 @@ exec_globals['__file__'] = os.path.join(ax_shell_dir, 'main.py')
 exec(open('main.py').read(), exec_globals)
 EOF
     chmod +x $out/bin/ax-shell
-    
+
     runHook postInstall
   '';
 

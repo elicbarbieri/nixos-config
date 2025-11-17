@@ -25,6 +25,10 @@ in {
           $env.LD_LIBRARY_PATH = $env.NIX_LD_LIBRARY_PATH
       }
 
+      # Triton CUDA library path (NixOS standard location for NVIDIA libs)
+      # This tells Triton where to find libcuda.so.1, avoiding /sbin/ldconfig call
+      $env.TRITON_LIBCUDA_PATH = "/run/opengl-driver/lib"
+
       # Path Configuration
       $env.PATH = ($env.PATH | split row (char esep))
       $env.PATH = ($env.PATH | prepend $"($env.HOME)/.cargo/bin")

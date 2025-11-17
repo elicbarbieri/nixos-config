@@ -6,11 +6,25 @@
     ./programs/nushell.nix
   ];
   
-  # For home-manager, wrap nixvim config in programs.nixvim
+  # Enable nixvim
   programs.nixvim = {
     enable = true;
     defaultEditor = true;
-  } // (import ./programs/nixvim { inherit pkgs; });
+    imports = [
+      ./programs/nixvim/settings.nix
+      ./programs/nixvim/keymaps.nix
+      ./programs/nixvim/autocmds.nix
+      ./programs/nixvim/plugins/colorschemes.nix
+      ./programs/nixvim/plugins/lsp.nix
+      ./programs/nixvim/plugins/cmp.nix
+      ./programs/nixvim/plugins/telescope.nix
+      ./programs/nixvim/plugins/treesitter.nix
+      ./programs/nixvim/plugins/ui.nix
+      ./programs/nixvim/plugins/git.nix
+      ./programs/nixvim/plugins/utils.nix
+      ./programs/nixvim/plugins/lint.nix
+    ];
+  };
   
   home.stateVersion = "25.05";
   

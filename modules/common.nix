@@ -1,44 +1,59 @@
 # Common configuration shared across all hosts
-{ pkgs, nixvim, ... }:
+{ pkgs, nixvim, config, lib, ... }:
 
 let
   commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim; }).common;
 in
 {
+  # Enable CUDA support for packages that need it (like vLLM)
+  nixpkgs.config.cudaSupport = true;
   nixpkgs.config.allowUnfree = true;
+
   time.timeZone = "America/Los_Angeles";
   i18n.defaultLocale = "en_US.UTF-8";
 
   users.users.elicb = {
     isNormalUser = true;
     description = "Eli Barbieri";
-    shell = pkgs.nushell; 
+    shell = pkgs.nushell;
     extraGroups = [ "networkmanager" "wheel" ];  # Base groups
   };
 
   environment.shells = [ pkgs.nushell ];
-  
-  # Common system packages (from lib/packages.nix)
-  # Note: neovim is now managed by nixvim in home-manager
+
   environment.systemPackages = commonPkgs;
+
   # uv needs basic libs to run downloaded python executables (.venv/bin/python)
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
+      # Base system libraries
       stdenv.cc.cc.lib
       zlib
       openssl
       curl
-      libz
       glibc
-      # ML/AI libraries for VLLM and PyTorch
-      # glib
-      # libGL
-      # libGLU
-      # linuxPackages.nvidia_x11
+      util-linux  # provides libuuid
+      expat
+
+      # NVIDIA Driver libraries (required for CUDA/vLLM)
+      linuxPackages.nvidia_x11
+
+      # CUDA core runtime libraries
+      cudaPackages.cuda_cudart
+      cudaPackages.cuda_nvrtc
+      cudaPackages.libcublas
+      cudaPackages.libcufft
+      cudaPackages.libcusparse
+      cudaPackages.libcusolver
+      cudaPackages.cudnn
+      cudaPackages.nccl
+
+      # Additional CUDA libraries for ML frameworks
+      cudaPackages.libcurand
     ];
   };
- 
+
   environment = {
     # System-level environment variables (used by system services)
     variables = {
@@ -77,5 +92,5 @@ in
   system.nixos.label = "";  # Disables the majority of the machine/os ID in the systemd boot entries
 
   boot.loader.efi.canTouchEfiVariables = true;
-  
+
 }
