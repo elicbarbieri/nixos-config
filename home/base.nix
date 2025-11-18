@@ -3,7 +3,7 @@
 {
   imports = [
     nixvim.homeModules.nixvim
-    ./programs/nushell.nix
+    ./programs/nushell
   ];
   
   # Enable nixvim
@@ -44,6 +44,7 @@
 
   programs.atuin = {
     enable = true;
+    enableNushellIntegration = true;
     settings = {
       auto_sync = true;
       sync_frequency = "10m";
