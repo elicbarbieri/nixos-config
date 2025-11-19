@@ -100,6 +100,10 @@ in
     printing.enable = true;
   };
 
+  # Enable wireshark for packet capture capabilities (needed for arp-scan, etc)
+  programs.wireshark.enable = true;
+  programs.wireshark.package = pkgs.wireshark;
+
   system.stateVersion = "25.05";
 
   networking.networkmanager.enable = true;
