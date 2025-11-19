@@ -44,6 +44,12 @@
 
   # Host-specific configuration only
   networking.hostName = "elicb-xps";
+  
+  # Allow Docker containers to access host services
+  networking.firewall = {
+    enable = true;
+    trustedInterfaces = [ "docker0" ];
+  };
 
   # Additional groups for this host (base groups are in common.nix)
   users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "keyd" ];
