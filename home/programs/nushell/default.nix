@@ -11,20 +11,21 @@ in {
     enable = true;
     
     extraEnv = ''
-      # Environment Variables
+      # Nushell-specific configuration
+      # Note: Most environment variables are set in NixOS config (common.nix)
+      # and automatically available here via environment.sessionVariables
       $env.config.show_banner = false
       $env.config.buffer_editor = "nvim"
-      $env.EDITOR = "nvim"
 
-      # NIX-LD Support (for running non-NixOS binaries)
+      # NIX-LD Support (for running non-NixOS binaries like Python packages)
+      # NixOS sets NIX_LD_LIBRARY_PATH, we just need to expose it as LD_LIBRARY_PATH
+      # so that Python and other tools can find the dynamically linked libraries
       if "NIX_LD_LIBRARY_PATH" in $env {
           $env.LD_LIBRARY_PATH = $env.NIX_LD_LIBRARY_PATH
       }
 
-      # Triton CUDA library path (NixOS standard location for NVIDIA libs)
-      $env.TRITON_LIBCUDA_PATH = "/run/opengl-driver/lib"
-
-      # Path Configuration
+      # Path Configuration (user-specific paths)
+      # Note: Keep in sync with home/base.nix sessionPath
       $env.PATH = ($env.PATH | split row (char esep))
       $env.PATH = ($env.PATH | prepend $"($env.HOME)/.cargo/bin")
       $env.PATH = ($env.PATH | prepend $"($env.HOME)/.local/bin")

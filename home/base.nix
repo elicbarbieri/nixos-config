@@ -34,9 +34,6 @@
     "$HOME/.bun/bin"
   ];
   
-  home.sessionVariables = {
-    EDITOR = "nvim";
-  };
 
   programs.carapace = {
     enable = true;

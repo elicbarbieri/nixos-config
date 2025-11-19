@@ -36,6 +36,7 @@
     ];
   };
 
+  # Host-specific session variables (merged with common.nix sessionVariables)
   environment.sessionVariables = { 
     LIBVA_DRIVER_NAME = "iHD";
   };

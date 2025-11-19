@@ -21,7 +21,12 @@ in
 
   environment.shells = [ pkgs.nushell ];
 
-  environment.systemPackages = commonPkgs;
+  environment.systemPackages = commonPkgs ++ (with pkgs; [
+    # CUDA development tools (needed for vLLM/FlashInfer JIT compilation)
+    ninja
+    cmake
+    cudaPackages.cudatoolkit  # Provides nvcc and other CUDA tools
+  ]);
 
   # uv needs basic libs to run downloaded python executables (.venv/bin/python)
   programs.nix-ld = {
@@ -59,6 +64,22 @@ in
     variables = {
       CARGO_HOME = "$HOME/.cargo";
     };
+    
+    # Session variables (available to all user shells and applications)
+    sessionVariables = {
+      # CUDA support for vLLM and other CUDA-dependent tools
+      CUDA_HOME = "${pkgs.cudaPackages.cudatoolkit}";
+      
+      # Library paths for CUDA linking (needed for FlashInfer JIT compilation)
+      LIBRARY_PATH = "${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudatoolkit}/lib/stubs";
+      
+      # Triton CUDA library path (NixOS standard location for NVIDIA libs)
+      TRITON_LIBCUDA_PATH = "/run/opengl-driver/lib";
+      
+      # Editor configuration
+      EDITOR = "nvim";
+    };
+    
     # Note: User PATH is now managed by home-manager (see home/default.nix)
     # and nushell (see dotfiles/nushell/env.nu)
   };
