@@ -9,12 +9,4 @@
   ruff = pkgs.runCommand "ruff-completion.nu" {} ''
     ${pkgs.ruff}/bin/ruff generate-shell-completion nushell > $out
   '';
-  
-  atuin = pkgs.runCommand "atuin-completion.nu" {} ''
-    ${pkgs.atuin}/bin/atuin gen-completions --shell nushell > $out
-  '';
-  
-  carapace = pkgs.runCommand "carapace-completion.nu" {} ''
-    ${pkgs.carapace}/bin/carapace _carapace nushell > $out
-  '';
 }

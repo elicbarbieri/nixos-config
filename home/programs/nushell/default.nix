@@ -3,6 +3,7 @@
 let
   # Import all config modules
   completions = import ./completions.nix { inherit pkgs; };
+  initScripts = import ./init-scripts.nix { inherit pkgs; };
   envContent = import ./env.nix;
   configContent = import ./config.nix;
   keybindingsContent = import ./keybindings.nix;
@@ -21,11 +22,13 @@ let
     ${promptContent}
     ${direnvContent}
     
+    # Load init scripts (shell integrations)
+    source ${initScripts.atuin}
+    source ${initScripts.carapace}
+    
     # Load completions
     source ${completions.uv}
     source ${completions.ruff}
-    source ${completions.atuin}
-    source ${completions.carapace}
   '';
 
 in

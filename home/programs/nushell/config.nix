@@ -36,21 +36,12 @@ $env.config.datetime_format = {
     table: "%m/%d/%y %I:%M:%S%p"
 }
 
-# Completions (carapace as external completer)
+# Completions (carapace init script will configure external completer)
 $env.config.completions = {
     case_sensitive: false
     quick: true
     partial: true
     algorithm: "prefix"
-    external: {
-        enable: true
-        max_results: 100
-        completer: {|spans|
-            carapace $spans.0 nushell ...$spans
-            | from json
-            | get -o value
-        }
-    }
     use_ls_colors: true
 }
 
