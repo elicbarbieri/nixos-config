@@ -1,8 +1,0 @@
-[user]
-    name = Eli Barbieri
-    email = elicbarbieri@gmail.com
-    signingkey = FC47C35DCE0A045C
-[init]
-    defaultBranch = master
-[commit]
-    gpgsign = true

@@ -1,49 +1,34 @@
-{ config, pkgs, lib, ... }:
+{ pkgs }:
 
 let
+  # Import all config modules
   completions = import ./completions.nix { inherit pkgs; };
-  shellConfig = import ./config.nix { };
-  keybindings = import ./keybindings.nix { };
-  aliases = import ./aliases.nix { };
-  
-in {
-  programs.nushell = {
-    enable = true;
-    
-    extraEnv = ''
-      # Nushell-specific configuration
-      # Note: Most environment variables are set in NixOS config (common.nix)
-      # and automatically available here via environment.sessionVariables
-      $env.config.show_banner = false
-      $env.config.buffer_editor = "nvim"
+  envContent = import ./env.nix;
+  configContent = import ./config.nix;
+  keybindingsContent = import ./keybindings.nix;
+  aliasesContent = import ./aliases.nix;
+  promptContent = import ./prompt.nix;
+  direnvContent = import ./direnv.nix;
 
-      # NIX-LD Support (for running non-NixOS binaries like Python packages)
-      # NixOS sets NIX_LD_LIBRARY_PATH, we just need to expose it as LD_LIBRARY_PATH
-      # so that Python and other tools can find the dynamically linked libraries
-      if "NIX_LD_LIBRARY_PATH" in $env {
-          $env.LD_LIBRARY_PATH = $env.NIX_LD_LIBRARY_PATH
-      }
+  # Environment configuration (env.nu)
+  envConfig = pkgs.writeText "env.nu" envContent;
 
-      # Path Configuration (user-specific paths)
-      # Note: Keep in sync with home/base.nix sessionPath
-      $env.PATH = ($env.PATH | split row (char esep))
-      $env.PATH = ($env.PATH | prepend $"($env.HOME)/.cargo/bin")
-      $env.PATH = ($env.PATH | prepend $"($env.HOME)/.local/bin")
-      $env.PATH = ($env.PATH | prepend $"($env.HOME)/.bun/bin")
-    '';
+  # Main configuration (config.nu)
+  mainConfig = pkgs.writeText "config.nu" ''
+    ${configContent}
+    ${keybindingsContent}
+    ${aliasesContent}
+    ${promptContent}
+    ${direnvContent}
     
-    extraConfig = ''
-      # Core configuration
-      ${shellConfig.shellConfig}
-      
-      # Keybindings
-      ${keybindings.keybindings}
-      
-      # Aliases and functions
-      ${aliases.aliases}
-      
-      # Load auto-generated completions
-      ${completions.sourceCompletions}
-    '';
-  };
-}
+    # Load completions
+    source ${completions.uv}
+    source ${completions.ruff}
+    source ${completions.atuin}
+    source ${completions.carapace}
+  '';
+
+in
+pkgs.writeShellScriptBin "nu" ''
+  exec ${pkgs.nushell}/bin/nu --env-config ${envConfig} --config ${mainConfig} "$@"
+''

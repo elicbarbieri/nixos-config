@@ -6,12 +6,20 @@ let
     module = import ../home/programs/nixvim;
   };
 
+  # Build git with personal config
+  git = import ../home/programs/git.nix { inherit pkgs; };
+
+  # Build nushell with personal config
+  nu = import ../home/programs/nushell { inherit pkgs; };
+
+  # Build atuin with personal config
+  atuin = import ../home/programs/atuin { inherit pkgs; };
+
   # CLI tools
   cli = with pkgs; [
     kitty
-    nushell
-    atuin
     carapace
+    direnv
     bat
     fd
     fzf
@@ -25,9 +33,8 @@ let
     lazygit
     btop
     tmux
-    git
   ];
-  
+
   # Development tools
   dev = with pkgs; [
     uv
@@ -41,11 +48,11 @@ let
     kubectl
     helm
   ];
-  
+
 in
 {
   inherit cli dev;
-  
+
   # Combined list for convenience
-  common = cli ++ dev ++ [ nvim ];
+  common = cli ++ dev ++ [ nvim git nu atuin ];
 }

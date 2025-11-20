@@ -1,31 +1,6 @@
-{ config, pkgs, lib, nixvim, ... }:
+{ config, pkgs, lib, ... }:
 
 {
-  imports = [
-    nixvim.homeModules.nixvim
-    ./programs/nushell
-  ];
-  
-  # Enable nixvim
-  programs.nixvim = {
-    enable = true;
-    defaultEditor = true;
-    imports = [
-      ./programs/nixvim/settings.nix
-      ./programs/nixvim/keymaps.nix
-      ./programs/nixvim/autocmds.nix
-      ./programs/nixvim/plugins/colorschemes.nix
-      ./programs/nixvim/plugins/lsp.nix
-      ./programs/nixvim/plugins/cmp.nix
-      ./programs/nixvim/plugins/telescope.nix
-      ./programs/nixvim/plugins/treesitter.nix
-      ./programs/nixvim/plugins/ui.nix
-      ./programs/nixvim/plugins/git.nix
-      ./programs/nixvim/plugins/utils.nix
-      ./programs/nixvim/plugins/lint.nix
-    ];
-  };
-  
   home.stateVersion = "25.05";
   
   home.sessionPath = [
@@ -35,117 +10,10 @@
   ];
   
 
-  programs.carapace = {
+  programs.direnv = {
     enable = true;
+    enableNushellIntegration = false;  # We handle this manually in nushell config
+    nix-direnv.enable = true;  # Better Nix integration with caching
   };
-
-  programs.atuin = {
-    enable = true;
-    enableNushellIntegration = true;
-    settings = {
-      auto_sync = true;
-      sync_frequency = "10m";
-      search_mode = "fuzzy";
-      filter_mode = "global";
-      style = "compact";
-      inline_height = 20;
-      show_preview = true;
-      max_preview_height = 4;
-      show_help = true;
-      exit_mode = "return-original";
-      keymap_mode = "emacs";
-      history_filter = [
-        "^secret-tool"
-        "^adb shell"
-        "^ssh"
-        "^rsync"
-        "^scp"
-        "^sudo"
-        "^doas"
-        "^su"
-        "^cd"
-        "^ls"
-        "^ll"
-        "^la"
-        "^pwd"
-        "^clear"
-        "^exit"
-        "^history"
-        "^which"
-        "^whereis"
-        "^whatis"
-        "^man"
-        "^help"
-        "^info"
-        "^apropos"
-        "^type"
-        "^alias"
-        "^unalias"
-        "^echo"
-        "^printf"
-        "^cat"
-        "^less"
-        "^more"
-        "^head"
-        "^tail"
-        "^grep"
-        "^egrep"
-        "^fgrep"
-        "^rg"
-        "^ag"
-        "^ack"
-        "^find"
-        "^locate"
-        "^updatedb"
-        "^date"
-        "^cal"
-        "^uptime"
-        "^w"
-        "^who"
-        "^whoami"
-        "^id"
-        "^groups"
-        "^finger"
-        "^last"
-        "^lastlog"
-        "^ps"
-        "^top"
-        "^htop"
-        "^btop"
-        "^pgrep"
-        "^pkill"
-        "^killall"
-        "^jobs"
-        "^bg"
-        "^fg"
-        "^nohup"
-        "^screen"
-        "^tmux"
-        "^apt"
-        "^apt-get"
-      ];
-      workspaces = true;
-      common_prefix = [ "sudo" ];
-      common_subcommands = [
-        "cargo"
-        "go"
-        "git"
-        "npm"
-        "yarn"
-        "pnpm"
-        "kubectl"
-        "docker"
-        "podman"
-        "systemctl"
-        "journalctl"
-        "make"
-        "cmake"
-        "mvn"
-        "gradle"
-      ];
-    };
-  };
-  
-
   
 }

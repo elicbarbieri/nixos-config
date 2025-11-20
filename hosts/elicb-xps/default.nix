@@ -45,6 +45,9 @@
   # Host-specific configuration only
   networking.hostName = "elicb-xps";
   
+  # Use latest stable kernel
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+  
   # Allow Docker containers to access host services
   networking.firewall = {
     enable = true;
