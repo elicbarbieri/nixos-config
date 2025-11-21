@@ -1,45 +1,51 @@
 { pkgs }:
 
 let
+  kittyColors = pkgs.writeText "colors.conf" ''
+    cursor #e2e2e9
+    cursor_text_color #c4c6d0
+    
+    foreground            #e2e2e9
+    background            #060709
+    selection_foreground  #293041
+    selection_background  #bfc6dc
+    url_color             #adc6ff
+    
+    # black
+    color8   #37393e
+    color0   #111318
+    
+    # red
+    color9 #ffccd0
+    color1 #ffb2b9
+    
+    # green
+    color10 #a7dcb6
+    color2 #95d5a7
+    
+    # yellow
+    color11 #c3d696
+    color3 #b8cf84
+    
+    # blue
+    color12 #d0d9ff
+    color4  #adc6ff
+    
+    # magenta
+    color13 #eccdf7
+    color5 #e4b7f3
+    
+    # cyan
+    color14 #97dae7
+    color6 #82d3e2
+    
+    # white
+    color7 #e2e2e9
+    color15 #c4c6d0
+  '';
+
   kittyConfig = pkgs.writeText "kitty.conf" ''
-    # Catppuccin Mocha
-    foreground              #CDD6F4
-    background              #1E1E2E
-    selection_foreground    #1E1E2E
-    selection_background    #F5E0DC
-    cursor                  #F5E0DC
-    cursor_text_color       #1E1E2E
-    url_color               #F5E0DC
-    active_border_color     #B4BEFE
-    inactive_border_color   #6C7086
-    bell_border_color       #F9E2AF
-    active_tab_foreground   #11111B
-    active_tab_background   #CBA6F7
-    inactive_tab_foreground #CDD6F4
-    inactive_tab_background #181825
-    tab_bar_background      #11111B
-    mark1_foreground        #1E1E2E
-    mark1_background        #B4BEFE
-    mark2_foreground        #1E1E2E
-    mark2_background        #CBA6F7
-    mark3_foreground        #1E1E2E
-    mark3_background        #74C7EC
-    color0  #45475A
-    color8  #585B70
-    color1  #F38BA8
-    color9  #F38BA8
-    color2  #A6E3A1
-    color10 #A6E3A1
-    color3  #F9E2AF
-    color11 #F9E2AF
-    color4  #89B4FA
-    color12 #89B4FA
-    color5  #F5C2E7
-    color13 #F5C2E7
-    color6  #94E2D5
-    color14 #94E2D5
-    color7  #BAC2DE
-    color15 #A6ADC8
+    include ${kittyColors}
 
     shell nu
     
