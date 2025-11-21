@@ -1,4 +1,4 @@
-{ pkgs }:
+{ pkgs, starship }:
 
 let
   # Import atuin config for build-time init script generation
@@ -34,5 +34,14 @@ in
   # Carapace shell integration (external completer with alias expansion)
   carapace = pkgs.runCommand "carapace-init.nu" {} ''
     ${pkgs.carapace}/bin/carapace _carapace nushell > $out
+  '';
+  
+  # Starship prompt integration - use wrapper to get config
+  starship = pkgs.runCommand "starship-init.nu" {} ''
+    # Generate init script with raw starship
+    ${pkgs.starship}/bin/starship init nu > temp.nu
+    
+    # Replace ALL occurrences of raw starship binary path with wrapper path
+    ${pkgs.gnused}/bin/sed 's|${pkgs.starship}/bin/starship|${starship}/bin/starship|g' temp.nu > $out
   '';
 }

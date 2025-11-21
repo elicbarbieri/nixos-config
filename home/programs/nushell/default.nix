@@ -1,14 +1,13 @@
-{ pkgs }:
+{ pkgs, starship }:
 
 let
   # Import all config modules
   completions = import ./completions.nix { inherit pkgs; };
-  initScripts = import ./init-scripts.nix { inherit pkgs; };
+  initScripts = import ./init-scripts.nix { inherit pkgs starship; };
   envContent = import ./env.nix;
   configContent = import ./config.nix;
   keybindingsContent = import ./keybindings.nix;
   aliasesContent = import ./aliases.nix;
-  promptContent = import ./prompt.nix;
   direnvContent = import ./direnv.nix;
 
   # Environment configuration (env.nu)
@@ -19,12 +18,12 @@ let
     ${configContent}
     ${keybindingsContent}
     ${aliasesContent}
-    ${promptContent}
     ${direnvContent}
     
     # Load init scripts (shell integrations)
     source ${initScripts.atuin}
     source ${initScripts.carapace}
+    source ${initScripts.starship}
     
     # Load completions
     source ${completions.uv}

@@ -1,6 +1,6 @@
 ''
-# Vi mode
-$env.config.edit_mode = "vi"
+# Edit mode (emacs for better Starship compatibility)
+$env.config.edit_mode = "emacs"
 
 # History configuration
 $env.config.history = {
@@ -45,11 +45,9 @@ $env.config.completions = {
     use_ls_colors: true
 }
 
-# Cursor shapes for vi mode
+# Cursor shape
 $env.config.cursor_shape = {
     emacs: line
-    vi_insert: line
-    vi_normal: block
 }
 
 # Plugin configuration

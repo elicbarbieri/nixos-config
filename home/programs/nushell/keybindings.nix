@@ -5,7 +5,7 @@ $env.config.keybindings = [
         name: insert_newline
         modifier: shift
         keycode: enter
-        mode: [emacs, vi_insert]
+        mode: emacs
         event: { edit: insertnewline }
     }
     
@@ -14,7 +14,7 @@ $env.config.keybindings = [
         name: completion_menu
         modifier: none
         keycode: tab
-        mode: [emacs, vi_insert]
+        mode: emacs
         event: {
             until: [
                 { send: menu name: completion_menu }
@@ -28,7 +28,7 @@ $env.config.keybindings = [
         name: quick_cd
         modifier: control
         keycode: char_g
-        mode: [emacs, vi_insert]
+        mode: emacs
         event: {
             send: executehostcommand
             cmd: "cd (fd . -t d | fzf --height=50% --preview '^ls --color=always {}' | str trim)"
@@ -40,7 +40,7 @@ $env.config.keybindings = [
         name: open_in_explorer
         modifier: control
         keycode: char_o
-        mode: [emacs, vi_insert, vi_normal]
+        mode: emacs
         event: {
             send: executehostcommand
             cmd: "xdg-open ."

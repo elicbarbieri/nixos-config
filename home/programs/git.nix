@@ -16,6 +16,7 @@ let
       excludesfile = ${pkgs.writeText "gitignore" ''
         **/.claude/settings.local.json
         *.qcow2
+        .direnv/
       ''}
   '';
 in
