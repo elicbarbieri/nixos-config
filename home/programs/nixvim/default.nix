@@ -6,6 +6,7 @@
     ./plugins/colorschemes.nix
     ./plugins/lsp.nix
     ./plugins/cmp.nix
+    ./plugins/supermaven.nix
     ./plugins/telescope.nix
     ./plugins/treesitter.nix
     ./plugins/ui.nix

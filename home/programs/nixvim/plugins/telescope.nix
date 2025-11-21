@@ -122,6 +122,16 @@
           action = "git_files";
           options.desc = "Find Files (git-files)";
         };
+        
+        # LSP Symbols (LazyVim <leader>ss and <leader>sS)
+        "<leader>ss" = {
+          action = "lsp_document_symbols";
+          options.desc = "LSP Symbols";
+        };
+        "<leader>sS" = {
+          action = "lsp_workspace_symbols";
+          options.desc = "LSP Workspace Symbols";
+        };
       };
     };
 }

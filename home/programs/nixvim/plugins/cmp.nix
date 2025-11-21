@@ -27,19 +27,17 @@
                 ['<C-Space>'] = cmp.mapping.complete(),
                 ['<C-e>'] = cmp.mapping.abort(),
                 ['<CR>'] = cmp.mapping.confirm({ select = true }),
+                ['<Up>'] = cmp.mapping.select_prev_item(),
+                ['<Down>'] = cmp.mapping.select_next_item(),
                 ['<Tab>'] = cmp.mapping(function(fallback)
-                  if cmp.visible() then
-                    cmp.select_next_item()
-                  elseif require('luasnip').expand_or_jumpable() then
+                  if require('luasnip').expand_or_jumpable() then
                     require('luasnip').expand_or_jump()
                   else
                     fallback()
                   end
                 end, { 'i', 's' }),
                 ['<S-Tab>'] = cmp.mapping(function(fallback)
-                  if cmp.visible() then
-                    cmp.select_prev_item()
-                  elseif require('luasnip').jumpable(-1) then
+                  if require('luasnip').jumpable(-1) then
                     require('luasnip').jump(-1)
                   else
                     fallback()

@@ -131,5 +131,19 @@
       action = "<cmd>LspInfo<cr>";
       options.desc = "Lsp Info";
     }
+    
+    # Navigate references (LazyVim [[ and ]] - using illuminate)
+    {
+      mode = "n";
+      key = "]]";
+      action = "<cmd>lua require('illuminate').goto_next_reference(false)<cr>";
+      options.desc = "Next Reference";
+    }
+    {
+      mode = "n";
+      key = "[[";
+      action = "<cmd>lua require('illuminate').goto_prev_reference(false)<cr>";
+      options.desc = "Prev Reference";
+    }
   ];
 }
