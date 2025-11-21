@@ -48,10 +48,17 @@
   # Use latest stable kernel
   boot.kernelPackages = pkgs.linuxPackages_latest;
   
-  # Allow Docker containers to access host services
+  # Allow containers to access host services
   networking.firewall = {
     enable = true;
-    trustedInterfaces = [ "docker0" "br-+" ];
+    trustedInterfaces = [ "docker0" "br-+" "cni+" ]; # Docker and Kubernetes CNI interfaces
+    allowedTCPPorts = [ 
+      6443  # Kubernetes API server
+      10250 # Kubelet API
+    ];
+    allowedUDPPorts = [ 
+      8472  # Flannel VXLAN
+    ];
   };
 
   # Additional groups for this host (base groups are in common.nix)
@@ -71,6 +78,12 @@
   # Host-specific services
   virtualisation.docker.enable = true;
   hardware.nvidia-container-toolkit.enable = true;
+  
+  # Kubernetes (k3s)
+  services.k3s = {
+    enable = true;
+    role = "server";
+  };
   
   services = {
     thermald.enable = true;

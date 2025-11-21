@@ -46,7 +46,8 @@ let
     bun
     go
     kubectl
-    helm
+    k9s
+    kubernetes-helm
   ];
 
 in

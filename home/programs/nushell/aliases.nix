@@ -1,7 +1,7 @@
 ''
 # Development aliases
-alias kgp = kubectl get pods
-alias kgd = kubectl get deployments
+def kgp [] { kubectl get pods | detect columns }
+def kgd [] { kubectl get deployments | detect columns }
 alias d = docker
 alias dc = docker compose
 alias gs = git status
@@ -17,7 +17,7 @@ def l [dir?: path] {
     match $dir {
         null => (ls -la)
         _ => (ls -la $dir)
-    } | select name type mode user size modified accessed 
+    } | select name type mode user size modified accessed
 }
 
 # Plugin installer utility
