@@ -12,7 +12,6 @@
     ".config/gtk-3.0".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/gtk/gtk-3.0";
     ".config/gtk-4.0".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/gtk/gtk-4.0";
     ".config/hypr".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/hypr";
-    ".config/kitty".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/kitty";
     ".config/Kvantum".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/Kvantum";
     ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/lazygit";
     ".config/qt6ct".source = config.lib.file.mkOutOfStoreSymlink "/home/elicb/nixos-config/dotfiles/qt6ct";

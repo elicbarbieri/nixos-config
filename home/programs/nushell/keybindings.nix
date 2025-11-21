@@ -31,7 +31,7 @@ $env.config.keybindings = [
         mode: [emacs, vi_insert]
         event: {
             send: executehostcommand
-            cmd: "cd (fd . -t d | fzf --height=50% --preview 'ls {}' | str trim)"
+            cmd: "cd (fd . -t d | fzf --height=50% --preview '^ls --color=always {}' | str trim)"
         }
     }
     

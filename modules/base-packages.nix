@@ -15,12 +15,16 @@ let
   # Build atuin with personal config
   atuin = import ../home/programs/atuin { inherit pkgs; };
 
+  # Build bat with personal config
+  bat = import ../home/programs/bat.nix { inherit pkgs; };
+
+  # Build kitty with personal config
+  kitty = import ../home/programs/kitty.nix { inherit pkgs; };
+
   # CLI tools
   cli = with pkgs; [
-    kitty
     carapace
     direnv
-    bat
     fd
     fzf
     gnupg
@@ -55,5 +59,5 @@ in
   inherit cli dev;
 
   # Combined list for convenience
-  common = cli ++ dev ++ [ nvim git nu atuin ];
+  common = cli ++ dev ++ [ nvim git nu atuin bat kitty ];
 }
