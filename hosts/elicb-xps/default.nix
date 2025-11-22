@@ -7,25 +7,25 @@
     ./disko-config.nix
   ];
 
-  # NVIDIA Configuration for RTX 4080 Mobile
+  # NVIDIA consumer drivers
   services.xserver.videoDrivers = [ "nvidia" ];
-  
+  hardware.nvidia-container-toolkit.enable = true;
+
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = true;
     powerManagement.finegrained = false;
     open = false;
     nvidiaSettings = true;
-    
+
     prime = {
       offload.enable = true;
       offload.enableOffloadCmd = true;
-      
+
       intelBusId = "PCI:0:2:0";
       nvidiaBusId = "PCI:1:0:0";
     };
   };
-  
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
@@ -37,17 +37,13 @@
   };
 
   # Host-specific session variables (merged with common.nix sessionVariables)
-  environment.sessionVariables = { 
+  environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "iHD";
   };
 
-
   # Host-specific configuration only
   networking.hostName = "elicb-xps";
-  
-  # Use latest stable kernel
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  
+
   # Allow containers to access host services
   networking.firewall = {
     enable = true;
@@ -68,10 +64,6 @@
 
   environment.etc."keyd/default.conf".source = ../../dotfiles/keyd-laptop/default.conf;
 
-  # Host-specific services
-  virtualisation.docker.enable = true;
-  hardware.nvidia-container-toolkit.enable = true;
-  
   services = {
     thermald.enable = true;
     fwupd.enable = true;
@@ -86,14 +78,14 @@
         imports = [ ../../modules/specializations/low-power.nix ];
       };
     };
-    
+
     gaming = {
       inheritParentConfig = true;
       configuration = {
         imports = [ ../../modules/specializations/gaming.nix ];
       };
     };
-    
+
     kubernetes = {
       inheritParentConfig = true;
       configuration = {

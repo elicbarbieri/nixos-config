@@ -1,9 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    # Pinned nixpkgs for modrinth-app 0.9.3 (working version before regression)
-    # Commit from nixos-unstable with modrinth-app 0.9.3
-    nixpkgs-modrinth.url = "github:nixos/nixpkgs/5633bcff0c6162b9e4b5f1264264611e950c8ec7";
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     ax-shell.url = "path:./ax-shell-module/";
@@ -13,9 +10,10 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-modrinth, hyprland, ax-shell, home-manager, disko, nixvim, ... }:
+  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, ... }:
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -30,17 +28,17 @@
     packages.x86_64-linux = {
       ax-shell = ax-shell.packages.x86_64-linux.default;
     };
-    
+
     # Ephemeral dev shells
     devShells.x86_64-linux = let
       basePackages = import ./modules/base-packages.nix { inherit pkgs nixvim; };
     in {
       default = pkgs.mkShell {
         packages = basePackages.common;
-        
+
         shellHook = ''
           echo "Elicb Dev Shell"
-          
+
           # Auto-start nushell if not already in it
           if [ -z "$NUSHELL_VERSION" ] && command -v nu &> /dev/null; then
             exec nu
@@ -50,7 +48,7 @@
     };
 
     nixosConfigurations = {
-      # Dell XPS 17 9730 configuration  
+      # Dell XPS 17 9730 configuration
       elicb-xps = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
@@ -61,7 +59,8 @@
           hyprland.nixosModules.default
           ax-shell.nixosModules.ax-shell
           disko.nixosModules.disko
-          
+          nix-flatpak.nixosModules.nix-flatpak
+
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -70,7 +69,7 @@
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];
-        specialArgs = { inherit hyprland self ax-shell nixvim nixpkgs-modrinth; };
+        specialArgs = { inherit hyprland self ax-shell nixvim; };
       };
 
       # Home Server configuration
@@ -79,8 +78,10 @@
         modules = [
           ./hosts/elicb-home-server
           ./modules/common.nix
+          ./modules/vm-variant.nix
+          disko.nixosModules.disko
           # Note: No desktop or performance modules for server
-          
+
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;

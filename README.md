@@ -13,6 +13,7 @@ Flake-based NixOS configuration with modular design, Hyprland desktop environmen
 │       └── hardware-configuration.nix
 ├── home/
 │   ├── default.nix              # Home-manager configuration (dotfile management)
+│   ├── programs/                # Wrapped core programs with config included
 │   └── shell.nix                # Shell environment setup
 ├── modules/
 │   ├── common.nix               # Shared settings across all hosts
@@ -24,9 +25,7 @@ Flake-based NixOS configuration with modular design, Hyprland desktop environmen
 │   └── low-power.nix            # Battery saving mode (offload + TLP)
 ├── dotfiles/                    # User dotfile dirs (symlinked by home-manager)  -- Everything here updates in realtime without a rebuild-switch
 │   ├── hypr/                    # Hyprland config (keybinds, autostart, animations, etc.)
-│   ├── nushell/                 # Shell scripts, utils, PATH config, etc...
-│   ├── nvim/                    # Neovim config that updates realtime without a rebuild-switch
-│   ... 
+│   ...
 ├── assets/
 │   └── wallpapers/              # Desktop wallpapers
 └── ax-shell-module/             # Custom Ax-Shell flake module
@@ -86,7 +85,7 @@ nixos-rebuild build-vm --flake .#elicb-xps
        ./modules/vm-variant.nix
        hyprland.nixosModules.default
        ax-shell.nixosModules.default
-       
+
        home-manager.nixosModules.home-manager
        {
          home-manager.useGlobalPkgs = true;

@@ -5,7 +5,6 @@ let
   commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim; }).common;
 in
 {
-  # Enable CUDA support for packages that need it (like vLLM)
   nixpkgs.config.cudaSupport = true;
   nixpkgs.config.allowUnfree = true;
 
@@ -64,22 +63,22 @@ in
     variables = {
       CARGO_HOME = "$HOME/.cargo";
     };
-    
+
     # Session variables (available to all user shells and applications)
     sessionVariables = {
       # CUDA support for vLLM and other CUDA-dependent tools
       CUDA_HOME = "${pkgs.cudaPackages.cudatoolkit}";
-      
+
       # Library paths for CUDA linking (needed for FlashInfer JIT compilation)
       LIBRARY_PATH = "${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudatoolkit}/lib/stubs";
-      
+
       # Triton CUDA library path (NixOS standard location for NVIDIA libs)
       TRITON_LIBCUDA_PATH = "/run/opengl-driver/lib";
-      
+
       # Editor configuration
       EDITOR = "nvim";
     };
-    
+
     # Note: User PATH is now managed by home-manager (see home/default.nix)
     # and nushell (see dotfiles/nushell/env.nu)
   };
@@ -93,6 +92,9 @@ in
 
   # Performance CPU governor for development
   powerManagement.cpuFreqGovernor = "performance";
+
+  # Host-specific services
+  virtualisation.docker.enable = true;
 
   # Common services all hosts need
   services = {
@@ -108,6 +110,7 @@ in
 
   networking.networkmanager.enable = true;
 
+  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
   boot.loader.systemd-boot = {
     enable = true;
     configurationLimit = 18;

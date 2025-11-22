@@ -1,31 +1,19 @@
 # Hardware configuration for elicb-home-server
-# This is a placeholder - generate the actual configuration by running:
-# nixos-generate-config --show-hardware-config > /etc/nixos/hardware-configuration.nix
-# on the target machine, then copy it here.
+# Minimal configuration - all filesystems managed by disko-config.nix and default.nix
 
 { config, lib, pkgs, modulesPath, ... }:
 
 {
   imports = [ ];
 
-  # TODO: Replace with actual hardware configuration
-  # This placeholder allows the flake to build without errors
-  boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "virtio_pci" "sr_mod" "virtio_blk" ];
+  # Kernel modules - update these after running nixos-generate-config during installation
+  boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "nvme" "usbhid" "sd_mod" "sr_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/nixos";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/boot";
-    fsType = "vfat";
-  };
-
   swapDevices = [ ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }

@@ -15,36 +15,36 @@ in
     defaultWallpaper = ./../../assets/wallpapers/dark-circuit.jpeg;
     dockAlwaysOccluded = true;
     barWorkspaceShowNumber = true;
-    
+
     # Disable GTK management - we handle it ourselves with matugen
     enableGtk = false;
-    
+
     # Keybinds managed manually in dotfiles (see ax-shell-module/README.md)
     keybinds.mode = "disabled";
-    
+
     # Matugen templates for rofi, GTK, and Kvantum theming
     matugen.config = ''
       [templates.rofi]
       input_path = "~/.config/rofi/colors.rasi.template"
       output_path = "~/.config/rofi/colors.rasi"
-      
+
       [templates.gtk3-css]
       input_path = "~/nixos-config/dotfiles/gtk/gtk-3.0/gtk.css.template"
       output_path = "~/.config/gtk-3.0/gtk.css"
-      
+
       [templates.gtk4-css]
       input_path = "~/nixos-config/dotfiles/gtk/gtk-4.0/gtk.css.template"
       output_path = "~/.config/gtk-4.0/gtk.css"
-      
+
       [templates.kvantum-theme]
       input_path = "~/.config/Kvantum/MatugenDynamic/MatugenDynamic.kvconfig.template"
       output_path = "~/.config/Kvantum/MatugenDynamic/MatugenDynamic.kvconfig"
     '';
   };
 
-  # Enable X server for session management  
+  # Enable X server for session management
   services.xserver.enable = true;
-  
+
   # Enable Hyprland
   programs.hyprland.enable = true;
 
@@ -72,7 +72,7 @@ in
       };
 
     };
-    
+
     # Audio
     pipewire = {
       enable = true;
@@ -84,7 +84,7 @@ in
     # Hardware services
     upower.enable = true;
     blueman.enable = true;
-    
+
     # System services
     dbus.enable = true;
     udisks2.enable = true;
@@ -113,8 +113,21 @@ in
   };
 
 
+  # Flatpak configuration
+  services.flatpak = {
+    enable = true;
+    packages = [
+      "com.spotify.Client"
+      "com.modrinth.ModrinthApp"
+    ];
+    update.auto = {
+      enable = true;
+      onCalendar = "weekly";
+    };
+  };
+
   environment.systemPackages = with pkgs; [
-    
+
     # Core HID deps
     keyd
     pinentry-rofi-themed
@@ -123,19 +136,16 @@ in
     # Core GUI Apps
     brave
     nautilus
-    spotify
     pavucontrol
-
-    # Work & Productivity
-    super-productivity
     slack
+    super-productivity
 
     # Qt theming - config handled by qt6ct dotfiles
     qt6Packages.qt6ct
     libsForQt5.qtstyleplugin-kvantum  # Qt5 Kvantum support
     kdePackages.qtstyleplugin-kvantum # Qt6 Kvantum support
     catppuccin-kvantum                # Catppuccin Kvantum theme
-    
+
     # GTK theming - config handled by gtk dotfiles
     adw-gtk3                          # Modern GTK3 theme (libadwaita port)
     adwaita-icon-theme                # Adwaita icons (required for libadwaita symbolic icons)
@@ -154,7 +164,7 @@ in
     noto-fonts-color-emoji
     nerd-fonts.symbols-only
   ];
-  
+
   # Set JetBrainsMono as default system font
   fonts.fontconfig = {
     enable = true;
@@ -171,7 +181,7 @@ in
     documentation = [ "https://wiki.hyprland.org/Hypr-Ecosystem/hypridle" ];
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
-    
+
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.hypridle}/bin/hypridle";
