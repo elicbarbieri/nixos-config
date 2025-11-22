@@ -138,7 +138,6 @@ in
     nautilus
     pavucontrol
     slack
-    super-productivity
 
     # Qt theming - config handled by qt6ct dotfiles
     qt6Packages.qt6ct
