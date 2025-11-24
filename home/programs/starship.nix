@@ -2,35 +2,47 @@
 
 let
   starshipConfig = pkgs.writeText "starship.toml" ''
-    # Left prompt: python/nix-shell indicator, directory, character
-    format = "$python$nix_shell$directory$character"
-    
-    # Right prompt: git info, ssh indicator, sudo indicator, shell level
+    # Left prompt: python/nix-shell indicator, custom repo name, directory path, character
+    format = "$python$nix_shell''${custom.git_repo}$directory$character"
+
+    # Right prompt: git branch, git status, ssh indicator, sudo indicator, shell level
     right_format = "$git_branch$git_status$hostname$sudo$shlvl"
-    
+
     add_newline = false
 
-    # Character changes based on success/error
-    [character]
-    success_symbol = "[>](bold #95d5a7)"
-    error_symbol = "[>](bold #ffb2b9)"
-    format = "$symbol "
+    # Custom module to show actual repo name (works for both worktrees and main repos)
+    [custom.git_repo]
+    command = """
+toplevel=$(git rev-parse --show-toplevel 2>/dev/null) || exit 1
+if [ -f "$toplevel/.git" ]; then
+  # Worktree: get parent dir name and strip .git suffix
+  repo=$(basename $(dirname "$toplevel"))
+  echo "''${repo%.git}"
+else
+  # Regular repo
+  basename "$toplevel"
+fi
+"""
+    shell = ["bash"]
+    when = true
+    format = "[$output]($style) "
+    style = "bold #e4b7f3"
 
-    # Nix shell indicator (only show when actually in nix-shell/nix develop)
+    # Nix shell indicator
     [nix_shell]
     symbol = "\\[nix-shell\\] "
     format = "[$symbol](bold #82d3e2)"
     heuristic = false
 
-    # Directory
+    # Directory - shows path within repo (custom module shows repo name)
     [directory]
     style = "bold #95d5a7"
     format = "[$path]($style)[$read_only]($read_only_style) "
     truncation_length = 3
     truncate_to_repo = true
     truncation_symbol = "…/"
-    repo_root_style = "bold #e4b7f3"
-    repo_root_format = "[$repo_root]($repo_root_style) [$path]($style)[$read_only]($read_only_style) "
+    repo_root_style = "bold #95d5a7"
+    repo_root_format = "[$path]($style)[$read_only]($read_only_style)"
 
     # Git branch
     [git_branch]
@@ -74,55 +86,12 @@ let
     # Python virtual environment (only show when active)
     [python]
     symbol = " "
-    format = "[$symbol($virtualenv)]($style) "
+    format = "[$symbol(venv)]($style) "
     style = "bold #c3d696"
     detect_extensions = []
     detect_files = []
     detect_folders = []
     pyenv_version_name = false
-
-    # Disable all other language version modules
-    [nodejs]
-    disabled = true
-    
-    [rust]
-    disabled = true
-    
-    [golang]
-    disabled = true
-    
-    [java]
-    disabled = true
-    
-    [ruby]
-    disabled = true
-    
-    [php]
-    disabled = true
-    
-    [lua]
-    disabled = true
-    
-    [package]
-    disabled = true
-    
-    [terraform]
-    disabled = true
-    
-    [kubernetes]
-    disabled = true
-    
-    [docker_context]
-    disabled = true
-    
-    [aws]
-    disabled = true
-    
-    [gcloud]
-    disabled = true
-    
-    [azure]
-    disabled = true
   '';
 
 in
