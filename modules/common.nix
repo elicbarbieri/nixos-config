@@ -16,6 +16,7 @@ in
     description = "Eli Barbieri";
     shell = pkgs.nushell;
     extraGroups = [ "networkmanager" "wheel" ];  # Base groups
+    hashedPassword = "$y$j9T$z8JqBQIdcU1et3H0j4QSY/$G6PrAO02DW7mgTs/mE28f7n8nNS1HWMeeKw/ZmipgP/";
   };
 
   environment.shells = [ pkgs.nushell ];
