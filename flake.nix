@@ -11,9 +11,11 @@
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, ... }:
+  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, ... }:
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -54,12 +56,14 @@
         modules = [
           ./hosts/elicb-xps
           ./modules/common.nix
+          ./modules/nvidia-cuda.nix
           ./modules/desktop
           ./modules/vm-variant.nix
           hyprland.nixosModules.default
           ax-shell.nixosModules.ax-shell
           disko.nixosModules.disko
           nix-flatpak.nixosModules.nix-flatpak
+          sops-nix.nixosModules.sops
 
           home-manager.nixosModules.home-manager
           {
@@ -69,7 +73,7 @@
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];
-        specialArgs = { inherit hyprland self ax-shell nixvim; };
+        specialArgs = { inherit hyprland self ax-shell nixvim sops-nix; };
       };
 
       # Home Server configuration
@@ -80,6 +84,7 @@
           ./modules/common.nix
           ./modules/vm-variant.nix
           disko.nixosModules.disko
+          sops-nix.nixosModules.sops
           # Note: No desktop or performance modules for server
 
           home-manager.nixosModules.home-manager
@@ -90,7 +95,7 @@
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];
-        specialArgs = { inherit self nixvim; };
+        specialArgs = { inherit self nixvim sops-nix; };
       };
     };
   };

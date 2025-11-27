@@ -5,7 +5,6 @@ let
   commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim; }).common;
 in
 {
-  nixpkgs.config.cudaSupport = true;
   nixpkgs.config.allowUnfree = true;
 
   time.timeZone = "America/Los_Angeles";
@@ -21,12 +20,7 @@ in
 
   environment.shells = [ pkgs.nushell ];
 
-  environment.systemPackages = commonPkgs ++ (with pkgs; [
-    # CUDA development tools (needed for vLLM/FlashInfer JIT compilation)
-    ninja
-    cmake
-    cudaPackages.cudatoolkit  # Provides nvcc and other CUDA tools
-  ]);
+  environment.systemPackages = commonPkgs;
 
   # uv needs basic libs to run downloaded python executables (.venv/bin/python)
   programs.nix-ld = {
@@ -40,22 +34,6 @@ in
       glibc
       util-linux  # provides libuuid
       expat
-
-      # NVIDIA Driver libraries (required for CUDA/vLLM)
-      linuxPackages.nvidia_x11
-
-      # CUDA core runtime libraries
-      cudaPackages.cuda_cudart
-      cudaPackages.cuda_nvrtc
-      cudaPackages.libcublas
-      cudaPackages.libcufft
-      cudaPackages.libcusparse
-      cudaPackages.libcusolver
-      cudaPackages.cudnn
-      cudaPackages.nccl
-
-      # Additional CUDA libraries for ML frameworks
-      cudaPackages.libcurand
     ];
   };
 
@@ -67,15 +45,6 @@ in
 
     # Session variables (available to all user shells and applications)
     sessionVariables = {
-      # CUDA support for vLLM and other CUDA-dependent tools
-      CUDA_HOME = "${pkgs.cudaPackages.cudatoolkit}";
-
-      # Library paths for CUDA linking (needed for FlashInfer JIT compilation)
-      LIBRARY_PATH = "${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudatoolkit}/lib/stubs";
-
-      # Triton CUDA library path (NixOS standard location for NVIDIA libs)
-      TRITON_LIBCUDA_PATH = "/run/opengl-driver/lib";
-
       # Editor configuration
       EDITOR = "nvim";
     };

@@ -47,7 +47,10 @@ let
     python3
     bun
     go
+
+    # Kubernetes
     kubectl
+    envsubst
     k9s
     kubernetes-helm
   ];

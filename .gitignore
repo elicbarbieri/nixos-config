@@ -12,6 +12,10 @@ result-*
 # History Files
 history.txt
 
+# Secret management
+extra-files/
+**/age-key*.txt
+.sops-age-keys/
 
 # Matugen Colors
 colors.css

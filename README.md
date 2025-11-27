@@ -67,6 +67,30 @@ nixos-rebuild build-vm --flake .#elicb-xps
 - GPG agent will auto-add the GPG key in .gnupg/  To add SSH keys, `ssh-add ~/.ssh/id_rsa` and then the ssh key will be prompted via rofi popup
 - I have non-nix packages as first class-citizens, so `uv tool install` `bun add -g` `cargo install` will all work for quickly installing utilities
 
+## Remote Deployment with nixos-anywhere
+
+- Target machine accessible via SSH as root
+- Age key for SOPS secrets
+
+### Deploy to Remote Machine
+
+```nushell
+# Create staging directory for secrets
+let staging = (mktemp -d)
+
+mkdir ($staging | path join "home" "elicb" ".config" "sops" "age")
+cp key-location/keys.txt ($staging | path join "home" "elicb" ".config" "sops" "age" "keys.txt")
+
+# Deploy with nixos-anywhere
+nix-shell -p nixos-anywhere --run $"
+  nixos-anywhere \
+    --extra-files '($staging)' \
+    --flake .#elicb-home-server \
+    ($target)
+"
+
+```
+
 ## Adding New Hosts
 
 1. Create host directory: `hosts/your-hostname/`

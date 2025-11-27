@@ -1,0 +1,15 @@
+keys:
+  - &elicb_xps age1fd7u2ec88u5v74q3qj8dxrsaw2f4md9lnt0klnr9vf74exr603mqw3qhey
+  - &elicb_home_server age1u8xg8wpe9cw7e0qrrz97uv94zlx5ql8cv485kw4ds7a7vyax9uhskw8vr9
+
+creation_rules:
+  - path_regex: hosts/elicb-home-server/secrets\.yaml$
+    key_groups:
+      - age:
+          - *elicb_xps
+          - *elicb_home_server
+  - path_regex: hosts/elicb-xps/secrets\.yaml$
+    key_groups:
+      - age:
+          - *elicb_xps
+          - *elicb_home_server
