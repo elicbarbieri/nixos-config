@@ -25,14 +25,13 @@ fi
 """
     shell = ["bash"]
     when = true
-    format = "[$output]($style) "
+    format = "[$output]($style)"
     style = "bold #e4b7f3"
 
     # Nix shell indicator
     [nix_shell]
     symbol = "\\[nix-shell\\] "
     format = "[$symbol](bold #82d3e2)"
-    heuristic = false
 
     # Directory - shows path within repo (custom module shows repo name)
     [directory]
@@ -42,7 +41,7 @@ fi
     truncate_to_repo = true
     truncation_symbol = "…/"
     repo_root_style = "bold #95d5a7"
-    repo_root_format = "[$path]($style)[$read_only]($read_only_style)"
+    repo_root_format = "( [$path]($style))[$read_only]($read_only_style) "
 
     # Git branch
     [git_branch]

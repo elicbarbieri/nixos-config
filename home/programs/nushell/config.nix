@@ -1,6 +1,7 @@
 ''
 # Edit mode (emacs for better Starship compatibility)
 $env.config.edit_mode = "emacs"
+$env.config.buffer_editor = "nvim"
 
 # History configuration
 $env.config.history = {
@@ -13,7 +14,7 @@ $env.config.history = {
 # Table display
 $env.config.table = {
     mode: "rounded"
-    index_mode: "always"
+    index_mode: "never"
     show_empty: true
     padding: { left: 1, right: 1 }
     trim: {
