@@ -13,6 +13,7 @@
     ./plugins/git.nix
     ./plugins/utils.nix
     ./plugins/lint.nix
+    ./plugins/markdown.nix
   ];
 
   # These options are for home-manager
