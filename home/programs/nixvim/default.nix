@@ -16,6 +16,11 @@
     ./plugins/markdown.nix
   ];
 
+  # Add linter packages needed by nvim-lint
+  extraPackages = with pkgs; [
+    markdownlint-cli2
+  ];
+
   # These options are for home-manager
   # For standalone, they're handled by the wrapper
   viAlias = true;
