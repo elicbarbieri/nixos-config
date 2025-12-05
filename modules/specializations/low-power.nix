@@ -10,6 +10,9 @@
   # Aggressive power saving
   powerManagement.cpuFreqGovernor = lib.mkForce "powersave";
 
+  # Disable power-profiles-daemon (conflicts with TLP)
+  services.power-profiles-daemon.enable = lib.mkForce false;
+
   # Enable TLP for power management
   services.tlp.enable = true;
 

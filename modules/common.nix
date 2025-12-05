@@ -60,9 +60,6 @@ in
     trusted-public-keys = ["hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="];
   };
 
-  # Performance CPU governor for development
-  powerManagement.cpuFreqGovernor = "performance";
-
   # Host-specific services
   virtualisation.docker.enable = true;
 
@@ -70,11 +67,22 @@ in
   services = {
     openssh.enable = true;
     printing.enable = true;
+    power-profiles-daemon.enable = true;
   };
 
   # Enable wireshark for packet capture capabilities (needed for arp-scan, etc)
   programs.wireshark.enable = true;
   programs.wireshark.package = pkgs.wireshark;
+
+  security.sudo.extraRules = [{
+    users = [ "elicb" ];
+    commands = [
+      {
+        command = "/run/current-system/sw/bin/btop";
+        options = [ "NOPASSWD" ];
+      }
+    ];
+  }];
 
   system.stateVersion = "25.05";
 

@@ -12,6 +12,20 @@ alias .. = cd ..
 alias ... = cd ../..
 alias .... = cd ../../..
 
+# System monitoring - run btop with sudo automatically (passwordless)
+alias btop = sudo btop
+
+# Run opencode with bash shell (agents use bash syntax)
+def oc [...args] {
+    let opencode_bin = (which opencode | get path.0? | default null)
+    if $opencode_bin == null {
+        ^bun install -g opencode-ai
+    }
+    with-env {SHELL: (which bash | get path.0)} {
+        ^opencode ...$args
+    }
+}
+
 # Utility functions
 def l [dir?: path] {
     match $dir {

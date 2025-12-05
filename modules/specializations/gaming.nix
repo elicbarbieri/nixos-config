@@ -22,6 +22,9 @@
     "i915.enable_dc=0"  # Disable Intel display power saving
   ];
 
+  # Disable power-profiles-daemon (conflicts with TLP)
+  services.power-profiles-daemon.enable = lib.mkForce false;
+
   # TLP performance settings for gaming
   services.tlp = {
     enable = true;

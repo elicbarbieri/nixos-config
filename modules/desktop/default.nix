@@ -113,6 +113,9 @@ in
   # Security
   security = {
     rtkit.enable = true;
+    
+    # PAM configuration for auto-unlocking gnome-keyring
+    pam.services.sddm.enableGnomeKeyring = true;
   };
 
 
