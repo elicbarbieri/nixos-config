@@ -43,25 +43,21 @@
 
 python3Packages.buildPythonApplication rec {
   pname = "ax-shell";
-  version = "unstable-2025-08-31";
+  version = "v0.0.62";
   format = "other";
 
   src = fetchFromGitHub {
     owner = "Axenide";
     repo = "Ax-Shell";
-    rev = "main";
-    sha256 = "sha256-3C8XiGeAPci0H+9y7erL34bBbOiEmKTRpGErRkA/9oY=";
+    rev = "e8604047408a818785b32c4a5d1c1e1c8b09b7e3";
+    sha256 = "sha256-iVUpIUSli234kwZsw9pOXu9hiR+7ws4x6AdlZyjTRbI=";
   };
 
   # Core Python dependencies
   propagatedBuildInputs = with python3Packages; [
-    # Core Python deps - pygobject3 provided by fabric package
     pycairo dbus-python
-    # Standard Python libraries
     loguru psutil click
-    # Ax-Shell specific deps
     ijson numpy pillow pywayland requests setproctitle toml watchdog
-    # Custom fabric package - CRITICAL for GUI framework (provides pygobject3)
     (callPackage ./python-fabric.nix {})
   ];
 
@@ -72,32 +68,20 @@ python3Packages.buildPythonApplication rec {
   ];
 
   buildInputs = [
-    # Core GTK/GObject dependencies
     gtk3 glib cairo gdk-pixbuf pango libdbusmenu-gtk3 gtk-layer-shell
     gnome-bluetooth cinnamon-desktop vte
-    # NetworkManager for GI typelibs - CRITICAL for services/network.py
     networkmanager
-    # UPower for battery/power management GI typelibs
     upower
-    # Wayland dependencies
     wayland wayland-protocols
-    # Image format support
     webp-pixbuf-loader
-    # Gray library for GI typelibs - CRITICAL for system tray
-    (callPackage ./gray.nix {})
-    # DBus system dependencies
     dbus dbus-glib
-    # Runtime dependencies
     brightnessctl cliphist hyprshot playerctl libnotify cava
-    # System utilities that ax-shell calls via subprocess
     imagemagick wl-clipboard procps swww matugen
-    # Cursor theme for GTK apps
     bibata-cursors
-    # Ax-Shell specific dependencies
     (callPackage ./fabric-cli.nix {})
+    (callPackage ./gray.nix {})
   ];
 
-  # Don't build - this is a pure Python application
   dontBuild = true;
   dontConfigure = true;
 

@@ -28,10 +28,12 @@
         source = "/home/elicb/nixos-config";
         target = "/home/elicb/nixos-config";
       };
-      sops-config = {
-        source = "/home/elicb/.config/sops";
-        target = "/home/elicb/.config/sops";
-      };
+
+      # sops-config = {
+      #   source = "/home/elicb/.config/sops";
+      #   target = "/home/elicb/.config/sops";
+      # };
+
     };
 
     virtualisation.qemu.options = [

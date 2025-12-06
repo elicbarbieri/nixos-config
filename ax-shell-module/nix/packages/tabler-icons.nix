@@ -2,14 +2,15 @@
 
 stdenv.mkDerivation rec {
   pname = "tabler-icons-font";
-  version = "2024-08-31";
+  version = "v0.0.62";
 
   src = fetchFromGitHub {
     owner = "Axenide";
     repo = "Ax-Shell";
-    rev = "main";
-    sha256 = "sha256-3C8XiGeAPci0H+9y7erL34bBbOiEmKTRpGErRkA/9oY=";
+    rev = "e8604047408a818785b32c4a5d1c1e1c8b09b7e3";
+    sha256 = "sha256-iVUpIUSli234kwZsw9pOXu9hiR+7ws4x6AdlZyjTRbI=";
   };
+
 
   installPhase = ''
     runHook preInstall
