@@ -13,23 +13,23 @@ in
   # sops-nix configuration
   sops = {
     defaultSopsFile = ./secrets.yaml;
-    age.keyFile = "/home/elicb/.config/sops/age/keys.txt";
+    age.keyFile = "/var/lib/sops-nix/age/keys.txt";
     secrets = {
-      "nordvpn/username" = {
-        owner = "root";
-        group = "root";
-        mode = "0400";
+      "deluge/auth" = {
+        owner = "deluge";
+        group = "deluge";
+        mode = "0600";
+        restartUnits = [ "deluged.service" ];
       };
-      "nordvpn/password" = {
-        owner = "root";
-        group = "root";
+      "airvpn/wireguard-private-key" = {
+        owner = "systemd-network";
+        group = "systemd-network";
         mode = "0400";
-        restartUnits = [ "openvpn-nordvpn.service" ];
+        restartUnits = [ "systemd-networkd-wireguard-wg0.service" ];
       };
     };
   };
 
-  # Existing RAID5 array (md0) - preserved, not managed by disko
   # UUID: b0de9c80:a5ac423d:61f20052:ba33e57e (RAID array UUID)
   # Filesystem UUID: d9b99d85-6a26-4637-b8db-342f465b58f8
   fileSystems."/mnt/md0" = {
@@ -37,8 +37,6 @@ in
     fsType = "ext4";
   };
 
-  # Existing deepstor data disk - preserved, not managed by disko
-  # Using label for simplicity (UUID: e526b56b-8e10-47ea-b3da-e0c344357f07)
   fileSystems."/mnt/deepstor" = {
     device = "/dev/disk/by-label/deepstor";
     fsType = "ext4";
@@ -50,13 +48,17 @@ in
     ARRAY /dev/md0 UUID=b0de9c80:a5ac423d:61f20052:ba33e57e
   '';
 
-  # Install base packages + btrfs tools + VPN utilities
   environment.systemPackages = base-packages.common ++ (with pkgs; [
     btrfs-progs
   ]);
 
-  # Host-specific configuration
   networking.hostName = "elicb-home-server";
+
+  # Firewall configuration
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 58846 ];  # Deluge daemon port
+  };
 
   # Enable IP forwarding for VPN namespace NAT
   boot.kernel.sysctl = {
@@ -64,19 +66,36 @@ in
   };
 
   # Additional groups for server functionality
-  users.users.elicb.extraGroups = [ "docker" "deluge" ];
+  users.users.elicb.extraGroups = [ "docker" "deluge" "plex" ];
 
-  # SSH authorized keys
   users.users.elicb.openssh.authorizedKeys.keys = [
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDgDA8a/EFrgf2Vzr7+Qnh1UBzu/l5xX1e/vMtNs1hiwdPCfjv/MisPidTlvU5X1tUvAGUZodX871FdnNX1EfRbWxX2kvURaM0GPJRhzCI+vmohH365qix4/HDUCVCFMGwDV8J6n3SgOYoOfGTOaFt+Q1Xmw8hHQfGOdxrh2AYWsGEjOhen4lPhZVDKzUB6+ZQmFnDWS9nd7ds8YOJ6ryxgdEICaD+rPSCDaRDJy5iHM4hyNITTm50pCR+oeYZ1Ay8q5ec3XEmpFGQSw4Roz5LV95TIfb0U7In8TTPGFrIPkxsvrEhBIdAVTcJXctHC4Ei2kOCAz0ArM0qA/L/Lpu7BNb/7eNHICEekTGx7v2tPqiE8+zTU8r7P2f5jWLcVYcJX8Xmj9xzBccR8Jo21+oujwo9Z2Yae94cdDkQeSQpASi/lZo7u7X7dfmUU70pypaDJhNwJv2GGRjRUPHFxVDMkRWJTGI0+QG8MoPMneOuolfOi7oSfrJ8/BrW3SlOOFgd73pvplZ4op/EwPCNKPgsig8oh24KOPxOD3C4hOPVr5OK7TVhG0KuHGeOkUgbtdC7RBcmwXWCKbmZ6xfrxXwvtuagWp5/6d3Cu96K2Q3dhVbh/DSaJH1uMKnEW0fsuB8xXj/YI5GrpaLIFNBpIibMiwOh3EJQQCawldKBJFRN3WQ== elicb@elicb-xps-wsl"
   ];
 
-  # Server-specific services
   virtualisation.docker.enable = true;
+
+  # Plex Media Server
+  services.plex = {
+    enable = true;
+    openFirewall = true;  # Opens port 32400 and other Plex ports for remote access
+    dataDir = "/var/lib/plex";  # Metadata, database, and transcoding cache
+  };
+
+  # Allow Plex to read media files downloaded by Deluge
+  users.users.plex.extraGroups = [ "deluge" ];
 
   services.deluge = {
     enable = true;
-    web.enable = true;
+    web.enable = false;
+    declarative = true;
+    config = {
+      daemon_port = 58846;
+      allow_remote = true;
+      download_location = "/mnt/deepstor/media/";
+      listen_ports = [ 24403 24404 24405 24406 24407 ];
+      random_port = false;
+    };
+    authFile = config.sops.secrets."deluge/auth".path;
   };
 
   systemd.services."netns@" = {
@@ -95,7 +114,7 @@ in
     description = "Setup VPN network namespace with veth pair";
     after = [ "netns@vpn.service" "network-online.target" ];
     requires = [ "netns@vpn.service" "network-online.target" ];
-    before = [ "openvpn-nordvpn.service" ];
+    before = [ "wireguard-wg0.service" ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
@@ -105,11 +124,10 @@ in
       ExecStart = pkgs.writeShellScript "setup-vpn-netns" ''
         set -e
 
-        # Create veth pair to connect namespace to host
-        ${pkgs.iproute2}/bin/ip link add veth-vpn type veth peer name veth-host
+        ${pkgs.iproute2}/bin/ip link del veth-host 2>/dev/null || true  # Cleanup any existing veth interfaces
 
-        # Move veth-vpn into the VPN namespace
-        ${pkgs.iproute2}/bin/ip link set veth-vpn netns vpn
+        ${pkgs.iproute2}/bin/ip link add veth-vpn type veth peer name veth-host
+        ${pkgs.iproute2}/bin/ip link set veth-vpn netns vpn    # Move veth-vpn into the VPN namespace
 
         # Configure host side
         ${pkgs.iproute2}/bin/ip addr add 10.200.200.1/24 dev veth-host
@@ -120,8 +138,9 @@ in
         ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link set veth-vpn up
         ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link set lo up
 
-        # Add default route through veth pair (only for establishing VPN connection)
-        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip route add default via 10.200.200.1
+        # Disable IPv6 in VPN namespace to prevent leaks
+        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.procps}/bin/sysctl -w net.ipv6.conf.all.disable_ipv6=1
+        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.procps}/bin/sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
         # Enable NAT so namespace can reach VPN server
         ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.200.200.0/24 -j MASQUERADE
@@ -141,126 +160,59 @@ in
     };
   };
 
-  # Prepare OpenVPN configuration and credentials
-  systemd.services."openvpn-nordvpn-prepare" = {
-    description = "Prepare NordVPN OpenVPN configuration";
-    before = [ "openvpn-nordvpn.service" ];
-    requires = [ "netns@vpn.service" "network-online.target" ];
-    after = [ "netns@vpn.service" "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+  networking.wireguard.interfaces.wg0 = {
+    ips = [ "10.140.151.141/32" ];
+    mtu = 1320;
+    privateKeyFile = config.sops.secrets."airvpn/wireguard-private-key".path;
 
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+    # Socket in root namespace, interface moved to VPN namespace
+    socketNamespace = null;  # null = root/init namespace
+    interfaceNamespace = "vpn";  # Move interface to VPN namespace
 
-      ExecStart = pkgs.writeShellScript "prepare-nordvpn-config" ''
-        set -e
+    # Don't let NixOS automatically manage routes - we do it manually for security
+    allowedIPsAsRoutes = false;
 
-        # Create runtime directory
-        mkdir -p /run/openvpn-nordvpn
-        chmod 700 /run/openvpn-nordvpn
+    # AirVPN server configuration
+    peers = [{
+      publicKey = "PyLCXAQT8KkM4T+dUsOQfn+Ub3pGxfGlxkIApuig+hk=";
+      presharedKey = "yRx8sd+1PE+lh1E89dJ/HgR2kGN3pGbYwqMhpEpOM6E=";
+      endpoint = "us3.vpn.airdns.org:1637";
+      allowedIPs = [ "0.0.0.0/0" ];
+      persistentKeepalive = 15;
+    }];
 
-        # Create namespace-specific resolv.conf directory
-        mkdir -p /etc/netns/vpn
-        echo "nameserver 103.86.96.100" > /etc/netns/vpn/resolv.conf  # NordVPN DNS
-        echo "nameserver 103.86.99.100" >> /etc/netns/vpn/resolv.conf  # NordVPN DNS backup
+    preSetup = ''
+      # namespace DNS configuration (AirVPN DNS)
+      mkdir -p /etc/netns/vpn
+      echo "nameserver 10.128.0.1" > /etc/netns/vpn/resolv.conf
+      chmod 644 /etc/netns/vpn/resolv.conf
 
-        # Download NordVPN config (using us9863 server - change as needed)
-        ${pkgs.curl}/bin/curl -sf https://downloads.nordcdn.com/configs/files/ovpn_udp/servers/us9863.nordvpn.com.udp.ovpn \
-          -o /run/openvpn-nordvpn/config.ovpn
-
-        # Create auth file with proper format (username on line 1, password on line 2)
-        # Ensure proper newlines by using echo to strip and re-add them
-        echo "$(cat ${config.sops.secrets."nordvpn/username".path})" > /run/openvpn-nordvpn/auth.txt
-        echo "$(cat ${config.sops.secrets."nordvpn/password".path})" >> /run/openvpn-nordvpn/auth.txt
-        chmod 600 /run/openvpn-nordvpn/auth.txt
-
-        # Create the killswitch up script
-        # This runs AFTER OpenVPN establishes the tunnel and deletes all non-VPN routes
-        cat > /run/openvpn-nordvpn/up-script.sh <<'EOF'
-#!/bin/sh
-# KILLSWITCH: Delete ALL routes except the VPN tunnel routes
-# After this runs, ONLY tun0 routes exist - if VPN fails, NO internet access
-
-echo "Routes before killswitch activation:"
-${pkgs.iproute2}/bin/ip route
-
-# Delete all routes that are NOT via tun0
-# This iteratively removes non-tun0 routes until only tun0 routes remain
-while ${pkgs.iproute2}/bin/ip route show | grep -v 'dev tun0' | grep -v '^$' > /dev/null; do
-  # Get the first non-tun0 route
-  ROUTE=$(${pkgs.iproute2}/bin/ip route show | grep -v 'dev tun0' | head -n1)
-
-  if [ -n "$ROUTE" ]; then
-    echo "Deleting route: $ROUTE"
-    ${pkgs.iproute2}/bin/ip route del $ROUTE 2>/dev/null || true
-  else
-    break
-  fi
-done
-
-echo ""
-echo "KILLSWITCH ACTIVATED: All non-VPN routes deleted"
-echo "Remaining routes (tun0 only):"
-${pkgs.iproute2}/bin/ip route
-EOF
-        chmod +x /run/openvpn-nordvpn/up-script.sh
-
-        # Add auth-user-pass directive to config
-        echo "auth-user-pass /run/openvpn-nordvpn/auth.txt" >> /run/openvpn-nordvpn/config.ovpn
-
-        # Add up script to run after tunnel is established
-        echo "script-security 2" >> /run/openvpn-nordvpn/config.ovpn
-        echo "up /run/openvpn-nordvpn/up-script.sh" >> /run/openvpn-nordvpn/config.ovpn
-
-        # Disable DNS updates in config since we handle it ourselves
-        echo "pull-filter ignore \"dhcp-option DNS\"" >> /run/openvpn-nordvpn/config.ovpn
-      '';
-
-      ExecStop = pkgs.writeShellScript "cleanup-nordvpn-config" ''
-        rm -rf /run/openvpn-nordvpn
-        rm -rf /etc/netns/vpn
-      '';
-    };
-  };
-
-  # Configure OpenVPN to run in VPN namespace using NixOS service
-  services.openvpn.servers.nordvpn = {
-    config = ''
-      config /run/openvpn-nordvpn/config.ovpn
+      echo "WireGuard preSetup: VPN namespace verified, DNS configured"
     '';
-    autoStart = true;
+
+    postSetup = ''
+      echo "=== WireGuard postSetup: Configuring killswitch ==="
+
+      ${pkgs.iproute2}/bin/ip -n vpn route flush table main   # KILLSWITCH: Flush ALL routes in VPN namespace
+
+      ${pkgs.iproute2}/bin/ip -n vpn route add default dev wg0
+      ${pkgs.iproute2}/bin/ip -n vpn route add 10.200.200.0/24 dev veth-vpn scope link  # Add veth route for proxy communication (link-local scope, no gateway)
+    '';
+
+    postShutdown = ''
+      rm -rf /etc/netns/vpn
+      echo "WireGuard postShutdown: Cleaned up namespace DNS config"
+    '';
   };
 
-  # Bind OpenVPN service to VPN namespace - this is the killswitch!
-  systemd.services.openvpn-nordvpn = {
-    after = [ "netns@vpn.service" "netns-vpn-setup.service" "openvpn-nordvpn-prepare.service" ];
-    requires = [ "netns@vpn.service" "netns-vpn-setup.service" "openvpn-nordvpn-prepare.service" ];
-    bindsTo = [ "netns@vpn.service" ];
-
-    serviceConfig = {
-      # THIS IS THE KILLSWITCH: The service runs in an isolated network namespace
-      NetworkNamespacePath = "/var/run/netns/vpn";
-
-      # Ensure proper restart behavior
-      Restart = "always";
-      RestartSec = "10s";
-    };
-  };
-
-  # Bind deluged to the VPN network namespace - KILLSWITCH ENABLED
-  # Deluge will ONLY be able to access internet through the VPN tunnel
-  # If VPN drops, deluge has no route out - 100% leak protection
+  # Bind deluged to VPN namespace - traffic only flows through VPN tunnel
   systemd.services.deluged = {
-    bindsTo = [ "netns@vpn.service" "openvpn-nordvpn.service" ];
-    requires = [ "openvpn-nordvpn.service" ];
-    after = [ "openvpn-nordvpn.service" ];
+    bindsTo = [ "netns@vpn.service" "wireguard-wg0.target" ];
+    requires = [ "wireguard-wg0.target" ];
+    after = [ "wireguard-wg0.target" ];
 
     serviceConfig = {
-      # THIS IS THE KILLSWITCH: Run in isolated namespace with only VPN route
       NetworkNamespacePath = "/var/run/netns/vpn";
-
-      # Wait a bit after VPN comes up for routing to stabilize
       ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
     };
   };
