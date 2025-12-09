@@ -85,11 +85,12 @@ inactive.highlight.color={{colors.primary.default.hex}}
 text.color={{colors.on_background.default.hex}}
 window.text.color={{colors.on_background.default.hex}}
 button.text.color={{colors.on_background.default.hex}}
-disabled.text.color={{colors.on_surface_variant.default.hex}}
+disabled.text.color={{colors.on_background.default.hex}}
 tooltip.text.color={{colors.on_background.default.hex}}
-highlight.text.color={{colors.on_primary.default.hex}}
-link.color={{colors.tertiary.default.hex}}
-link.visited.color={{colors.tertiary_container.default.hex}}
+highlight.text.color={{colors.on_background.default.hex}}
+link.color={{colors.primary.default.hex}}
+link.visited.color={{colors.primary.default.hex}}
+progress.indicator.text.color={{colors.on_background.default.hex}}
 
 [ItemView]
 inherits=PanelButtonCommand
@@ -98,8 +99,8 @@ interior.element=itemview
 frame=true
 interior=true
 text.iconspacing=3
-text.press.color=#C6D0F5
-text.toggle.color=#C6D0F5
+text.press.color=white
+text.toggle.color=white
 
 [RadioButton]
 inherits=PanelButtonCommand
@@ -126,10 +127,10 @@ frame=true
 inherits=PanelButtonCommand
 interior.element=button
 frame.element=button
-text.normal.color=#C6D0F5
-text.focus.color=#C6D0F5
-text.press.color=#C6D0F5
-text.toggle.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.toggle.color=white
 
 [PanelButtonTool]
 inherits=PanelButtonCommand
@@ -231,10 +232,10 @@ frame.bottom=3
 frame.left=3
 frame.right=3
 indicator.size=10
-text.normal.color=#949CBB
-text.focus.color=#C6D0F5
-text.press.color=#C6D0F5
-text.toggle.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.toggle.color=white
 focusFrame=true
 
 [TabBarFrame]
@@ -271,10 +272,10 @@ frame.bottom=1
 frame.left=1
 frame.right=1
 frame.expansion=0
-text.normal.color=#C6D0F5
-text.focus.color=#8CAAEE
-text.press.color=#C6D0F5
-text.toggle.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.toggle.color=white
 indicator.element=harrow
 
 [SizeGrip]
@@ -292,10 +293,10 @@ frame=true
 frame.bottom=4
 frame.left=4
 frame.right=4
-text.normal.color=#C6D0F5
-text.focus.color=#C6D0F5
-text.press.color=#8CAAEE
-text.toggle.color=#8CAAEE
+text.normal.color={{colors.on_background.default.hex}}
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.toggle.color=white
 text.bold=false
 
 [MenuBar]
@@ -303,7 +304,7 @@ inherits=PanelButtonCommand
 frame.element=menubar
 interior.element=menubar
 frame.bottom=0
-text.normal.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
 frame.expansion=0
 text.bold=false
 
@@ -311,10 +312,10 @@ text.bold=false
 frame.element=tbutton
 interior.element=tbutton
 indicator.element=arrow
-text.normal.color=#C6D0F5
-text.focus.color=#C6D0F5
-text.press.color=#C6D0F5
-text.toggle.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.toggle.color=white
 text.bold=false
 
 [ToolbarLineEdit]
@@ -360,10 +361,10 @@ frame.bottom=2
 frame.left=2
 frame.right=2
 text.margin=0
-text.normal.color=#C6D0F5
-text.focus.color=#C6D0F5
-text.press.color=#292C3C
-text.toggle.color=#292C3C
+text.normal.color={{colors.on_background.default.hex}}
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.toggle.color=white
 text.bold=false
 frame.expansion=18
 
@@ -374,8 +375,8 @@ inherits=PanelButtonCommand
 frame.element=menu
 interior.element=menu
 inherits=PanelButtonCommand
-text.press.color=#292C3C
-text.toggle.color=#292C3C
+text.press.color=white
+text.toggle.color=white
 text.bold=false
 frame.top=3
 frame.bottom=3
@@ -386,8 +387,8 @@ frame.right=3
 inherits=PanelButtonCommand
 interior.element=menuitem
 indicator.size=8
-text.focus.color=#C6D0F5
-text.press.color=#C6D0F5
+text.focus.color={{colors.on_background.default.hex}}
+text.press.color=white
 
 [MenuBarItem]
 inherits=PanelButtonCommand
@@ -402,7 +403,7 @@ text.margin.right=5
 inherits=Toolbar
 frame.element=toolbar
 font.bold=true
-text.normal.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
 frame=true
 frame.top=0
 frame.bottom=0
@@ -427,14 +428,14 @@ text.margin.top=1
 text.margin.bottom=1
 text.margin.left=3
 text.margin.right=3
-text.press.color=#C6D0F5
-text.toggle.color=#C6D0F5
+text.press.color=white
+text.toggle.color=white
 
 [ToolboxTab]
 inherits=PanelButtonCommand
-text.normal.color=#C6D0F5
-text.press.color=#C6D0F5
-text.focus.color=#C6D0F5
+text.normal.color={{colors.on_background.default.hex}}
+text.press.color=white
+text.focus.color={{colors.on_background.default.hex}}
 
 [Hacks]
 transparent_dolphin_view=false
