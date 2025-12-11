@@ -180,5 +180,10 @@ let
 
 in
 pkgs.writeShellScriptBin "zellij" ''
-  exec ${pkgs.zellij}/bin/zellij --config ${zellijConfig} "$@"
+  # Only inject default config if --config or -c is not already specified
+  if [[ ! " $* " =~ " --config " ]] && [[ ! " $* " =~ " -c " ]]; then
+    exec ${pkgs.zellij}/bin/zellij --config ${zellijConfig} "$@"
+  else
+    exec ${pkgs.zellij}/bin/zellij "$@"
+  fi
 ''

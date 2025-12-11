@@ -4,6 +4,8 @@
     
     lintersByFt = {
       markdown = ["markdownlint-cli2"];
+      sql = ["sqlfluff"];
+      nix = ["nix"];
     };
   };
   

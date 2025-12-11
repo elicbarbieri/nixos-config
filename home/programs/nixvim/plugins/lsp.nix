@@ -68,6 +68,14 @@
             yaml = ["prettier"];
             markdown = ["prettier"];
             bash = ["shfmt"];
+            sql = ["sqlfluff"];
+          };
+          
+          # Configure sqlfluff formatter for PostgreSQL and SQLite
+          formatters = {
+            sqlfluff = {
+              args = ["format" "--dialect=postgres" "-"];
+            };
           };
           format_on_save = {
             lsp_fallback = true;

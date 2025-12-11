@@ -32,5 +32,18 @@ let
 
 in
 pkgs.writeShellScriptBin "nu" ''
-  exec ${pkgs.nushell}/bin/nu --env-config ${envConfig} --config ${mainConfig} "$@"
+  # Build command with conditional config injection
+  cmd="${pkgs.nushell}/bin/nu"
+  
+  # Only add --env-config if not already specified
+  if [[ ! " $* " =~ " --env-config " ]]; then
+    cmd="$cmd --env-config ${envConfig}"
+  fi
+  
+  # Only add --config if not already specified
+  if [[ ! " $* " =~ " --config " ]]; then
+    cmd="$cmd --config ${mainConfig}"
+  fi
+  
+  exec $cmd "$@"
 ''

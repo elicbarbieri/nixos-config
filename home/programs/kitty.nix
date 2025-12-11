@@ -85,5 +85,10 @@ let
 
 in
 pkgs.writeShellScriptBin "kitty" ''
-  exec ${pkgs.kitty}/bin/kitty --config ${kittyConfig} "$@"
+  # Only inject default config if --config or -c is not already specified
+  if [[ ! " $* " =~ " --config " ]] && [[ ! " $* " =~ " -c " ]]; then
+    exec ${pkgs.kitty}/bin/kitty --config ${kittyConfig} "$@"
+  else
+    exec ${pkgs.kitty}/bin/kitty "$@"
+  fi
 ''

@@ -14,15 +14,18 @@
     ./plugins/utils.nix
     ./plugins/lint.nix
     ./plugins/markdown.nix
+    ./plugins/dadbod.nix
   ];
 
-  # Add linter packages needed by nvim-lint
   extraPackages = with pkgs; [
+    # Add linter packages needed by nvim-lint and formatters
     markdownlint-cli2
-  ];
+    sqlfluff
+    nixpkgs-fmt
+    shfmt
 
-  # These options are for home-manager
-  # For standalone, they're handled by the wrapper
-  viAlias = true;
-  vimAlias = true;
+    # Add database tools needed by vim-dadbod
+    postgresql  # Provides psql executable
+    sqlite      # SQLite database and sqlite3 command-line tool
+  ];
 }

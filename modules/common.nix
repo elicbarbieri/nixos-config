@@ -45,7 +45,6 @@ in
 
     # Session variables (available to all user shells and applications)
     sessionVariables = {
-      # Editor configuration
       EDITOR = "nvim";
     };
 

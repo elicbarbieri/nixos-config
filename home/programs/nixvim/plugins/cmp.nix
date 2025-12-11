@@ -52,6 +52,7 @@
             { name = "luasnip"; }
             { name = "path"; }
             { name = "buffer"; }
+            { name = "vim-dadbod-completion"; }
           ];
           
           window = {
@@ -82,6 +83,7 @@
               luasnip = "[Snippet]";
               buffer = "[Buffer]";
               path = "[Path]";
+              vim-dadbod-completion = "[DB]";
             };
           };
         };

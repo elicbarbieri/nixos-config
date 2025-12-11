@@ -7,6 +7,10 @@
         highlight.enable = true;
         indent.enable = true;
         
+        ensure_installed = [
+          "sql"
+        ];
+        
         incremental_selection = {
           enable = true;
           keymaps = {
