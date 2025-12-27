@@ -92,8 +92,28 @@ in
       daemon_port = 58846;
       allow_remote = true;
       download_location = "/mnt/deepstor/media/";
+
+      # Port forwarding (AirVPN forwarded ports)
       listen_ports = [ 24403 24404 24405 24406 24407 ];
       random_port = false;
+      listen_interface = "0.0.0.0";
+
+      max_active_limit = -1;              # Unlimited active torrents
+      max_active_downloading = 10;         # 10 downloading simultaneously
+      max_active_seeding = -1;             # Unlimited seeding
+
+      max_connections_global = 800;        # Total connections across all torrents
+      max_connections_per_torrent = 100;   # Per-torrent connection limit
+      max_upload_slots_global = -1;        # Unlimited global upload slots
+      max_upload_slots_per_torrent = 8;    # 8 upload slots per torrent
+
+      # Disable unnecessary features (manual port forwarding in use)
+      upnp = false;                        # Disable UPnP
+      natpmp = false;                      # Disable NAT-PMP
+
+      dht = true;                          # Enable DHT
+      utpex = true;                        # Enable peer exchange
+      lsd = true;                          # Enable Local Service Discovery
     };
     authFile = config.sops.secrets."deluge/auth".path;
   };
