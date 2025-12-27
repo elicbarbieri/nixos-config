@@ -52,7 +52,7 @@
             { name = "luasnip"; }
             { name = "path"; }
             { name = "buffer"; }
-            { name = "vim-dadbod-completion"; }
+            # vim-dadbod-completion added via FileType autocmd in dadbod.nix
           ];
           
           window = {
