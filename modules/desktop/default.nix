@@ -201,4 +201,9 @@ in
       RestartSec = "5";
     };
   };
+
+  # Fix Intel SOF audio driver bugs during gaming (disable audio power saving)
+  boot.extraModprobeConfig = ''
+    options snd_hda_intel power_save=0
+  '';
 }
