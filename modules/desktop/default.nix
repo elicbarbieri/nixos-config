@@ -151,6 +151,7 @@ in
     slack
     deluge
     dbeaver-bin
+    telegram-desktop
 
     # Qt theming - config handled by qt6ct dotfiles
     qt6Packages.qt6ct

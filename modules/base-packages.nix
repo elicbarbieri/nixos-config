@@ -53,6 +53,12 @@ let
     envsubst
     k9s
     kubernetes-helm
+
+    # nix
+    nix-prefetch-github
+    nixos-anywhere
+    cachix
+    disko
   ];
 
 in

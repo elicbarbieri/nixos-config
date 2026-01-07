@@ -32,6 +32,8 @@
       CPU_BOOST_ON_AC = 1;
       CPU_BOOST_ON_BAT = 1;
       USB_AUTOSUSPEND = 0;  # Prevent gaming peripheral disconnects
+      PLATFORM_PROFILE_ON_AC = "performance";   # Uncap GPU power
+      PLATFORM_PROFILE_ON_BAT = "performance";  # Uncap GPU power on battery too
     };
   };
 
