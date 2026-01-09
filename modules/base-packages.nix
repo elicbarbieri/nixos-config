@@ -48,6 +48,9 @@ let
     bun
     go
 
+    # c/c++
+    clang
+
     # Kubernetes
     kubectl
     envsubst
