@@ -17,12 +17,16 @@ let
 
   # CLI tools
   cli = with pkgs; [
+    # TODO: Bake in jj config w/ override
+    jujutsu
+
     carapace
     direnv
     fd
     fzf
     gnupg
     ripgrep
+    jq
     tree
     traceroute
     arp-scan
