@@ -1,5 +1,5 @@
 # Dell XPS 17 9730 Host Configuration
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
@@ -83,6 +83,16 @@
       inheritParentConfig = true;
       configuration = {
         imports = [ ../../modules/specializations/gaming.nix ];
+        
+        # XPS-specific: Force PRIME sync mode for maximum gaming performance
+        hardware.nvidia.prime = {
+          offload.enable = lib.mkForce false;
+          offload.enableOffloadCmd = lib.mkForce false;
+          sync.enable = lib.mkForce true;
+        };
+        
+        # XPS-specific: Disable Intel display power saving for performance
+        boot.kernelParams = [ "i915.enable_dc=0" ];
       };
     };
 
