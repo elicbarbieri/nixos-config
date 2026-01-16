@@ -20,6 +20,13 @@
                 mountpoint = "/boot";
               };
             };
+            swap = {
+              size = "16G";
+              content = {
+                type = "swap";
+                randomEncryption = true;  # Encrypt swap with random key on each boot
+              };
+            };
             root = {
               size = "100%";
               content = {
