@@ -97,6 +97,32 @@
         ];
         specialArgs = { inherit self nixvim sops-nix; };
       };
+
+      # Dell Desktop configuration - RTX 2070 Super
+      elicb-dell-desktop = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          ./hosts/elicb-dell-desktop
+          ./modules/common.nix
+          ./modules/nvidia-cuda.nix
+          ./modules/desktop
+          ./modules/vm-variant.nix
+          hyprland.nixosModules.default
+          ax-shell.nixosModules.ax-shell
+          disko.nixosModules.disko
+          nix-flatpak.nixosModules.nix-flatpak
+          sops-nix.nixosModules.sops
+
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.elicb = import ./home/desktop.nix;
+            home-manager.extraSpecialArgs = { inherit nixvim; };
+          }
+        ];
+        specialArgs = { inherit hyprland self ax-shell nixvim sops-nix; };
+      };
     };
   };
 }

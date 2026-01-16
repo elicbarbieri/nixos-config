@@ -7,6 +7,9 @@ let
   '';
 in
 {
+  imports = [
+    ./sddm-sugar-dark.nix
+  ];
   # Ax-shell configuration - only the actual non-default settings needed
   programs.ax-shell = {
     enable = true;
@@ -61,16 +64,11 @@ in
   # Essential desktop services
   services = {
     # Display manager - using SDDM for better Wayland compatibility
+    # Auto-login disabled to allow proper GNOME Keyring unlock via PAM
     displayManager = {
-      sddm = {
-        enable = true;
-        wayland.enable = true;
-      };
       autoLogin = {
-        enable = true;
-        user = "elicb";
+        enable = false;
       };
-
     };
 
     # Audio

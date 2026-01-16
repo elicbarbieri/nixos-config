@@ -39,7 +39,9 @@ let
     wl-clipboard
     age
     sops
+
     openssl
+    lsof
   ];
 
   # Development tools

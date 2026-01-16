@@ -7,10 +7,15 @@ $env.config.hooks.env_change.PWD = ($env.config.hooks.env_change.PWD? | default 
   if (which direnv | is-empty) {
     return
   }
-  
-  direnv export json 
-  | from json 
-  | default {} 
+
+  direnv export json
+  | from json
+  | default {}
   | load-env
+
+  # Convert PATH back to a list if direnv made it a string
+  if ($env.PATH | describe) == "string" {
+    $env.PATH = ($env.PATH | split row (char esep))
+  }
 })
 ''
