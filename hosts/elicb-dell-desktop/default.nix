@@ -1,7 +1,14 @@
 # Dell Desktop Configuration
 # RTX 2070 Super - Dedicated GPU
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
+let
+  # Custom EDID firmware for Sceptre F27 monitor (has buggy EDID via DP->HDMI adapter)
+  sceptreEdid = pkgs.runCommandLocal "sceptre-edid-firmware" {} ''
+    mkdir -p $out/lib/firmware/edid
+    cp ${../../assets/edid/sceptre-f27-1080p60.bin} $out/lib/firmware/edid/sceptre-f27-1080p60.bin
+  '';
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -29,6 +36,11 @@
     enable = true;
     enable32Bit = true;  # Needed for 32-bit games and compatibility
   };
+
+  # EDID override for Sceptre F27 monitor on DP-3 (connected via DP->HDMI adapter)
+  # This fixes EDID detection issues with the monitor's buggy firmware
+  hardware.firmware = [ sceptreEdid ];
+  boot.kernelParams = [ "drm.edid_firmware=DP-3:edid/sceptre-f27-1080p60.bin" ];
 
   # Docker firewall configuration
   networking.firewall = {
