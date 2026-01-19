@@ -35,9 +35,13 @@
   environment.sessionVariables = {
     # CUDA support for vLLM and other CUDA-dependent tools
     CUDA_HOME = "${pkgs.cudaPackages.cudatoolkit}";
+    CUDA_PATH = "${pkgs.cudaPackages.cudatoolkit}";
 
     # Library paths for CUDA linking (needed for FlashInfer JIT compilation)
     LIBRARY_PATH = "${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudatoolkit}/lib/stubs";
+
+    # Include path for gcc to find CUDA headers (cuda_runtime.h, etc.)
+    CPATH = "${pkgs.cudaPackages.cudatoolkit}/include";
 
     # Triton CUDA library path (NixOS standard location for NVIDIA libs)
     TRITON_LIBCUDA_PATH = "/run/opengl-driver/lib";
