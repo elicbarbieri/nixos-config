@@ -36,12 +36,30 @@
                     mountpoint = "/nix";
                     mountOptions = [ "compress=zstd" "noatime" ];
                   };
-                  "@minecraft" = {
-                    mountpoint = "/minecraft";
-                    mountOptions = [ "compress=zstd" ];
-                  };
                   "@snapshots" = {
                     mountpoint = "/.snapshots";
+                    mountOptions = [ "compress=zstd" ];
+                  };
+                  # Minecraft servers
+                  "@minecraft_121_vanilla" = {
+                    mountpoint = "/srv/minecraft/121_vanilla";
+                    mountOptions = [ "compress=zstd" ];
+                  };
+                  # ARK Survival Ascended servers
+                  "@asa_island" = {
+                    mountpoint = "/srv/ark/island";
+                    mountOptions = [ "compress=zstd" ];
+                  };
+                  "@asa_scorched" = {
+                    mountpoint = "/srv/ark/scorched";
+                    mountOptions = [ "compress=zstd" ];
+                  };
+                  "@asa_aberration" = {
+                    mountpoint = "/srv/ark/aberration";
+                    mountOptions = [ "compress=zstd" ];
+                  };
+                  "@asa_cluster" = {
+                    mountpoint = "/srv/ark/cluster";
                     mountOptions = [ "compress=zstd" ];
                   };
                 };

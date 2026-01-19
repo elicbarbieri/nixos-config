@@ -27,6 +27,25 @@ in
         mode = "0400";
         restartUnits = [ "systemd-networkd-wireguard-wg0.service" ];
       };
+      "ark/admin-password" = {};
+      "ark/server-password" = {};
+    };
+
+    # ARK server environment templates with secrets
+    templates."ark-island.env" = {
+      content = ''
+        ASA_START_PARAMS=TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=y5YKVK4wfc4J -ClusterDirOverride=/var/cluster -NoTransferFromFiltering -mods=1195096,1099220,929420
+      '';
+    };
+    templates."ark-scorched.env" = {
+      content = ''
+        ASA_START_PARAMS=ScorchedEarth_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=y5YKVK4wfc4J -ClusterDirOverride=/var/cluster -NoTransferFromFiltering -mods=1195096,1099220,929420
+      '';
+    };
+    templates."ark-aberration.env" = {
+      content = ''
+        ASA_START_PARAMS=Aberration_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=y5YKVK4wfc4J -ClusterDirOverride=/var/cluster -NoTransferFromFiltering -mods=1195096,1099220,929420
+      '';
     };
   };
 
@@ -57,7 +76,13 @@ in
   # Firewall configuration
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 58846 ];  # Deluge daemon port
+    allowedTCPPorts = [
+      58846         # Deluge daemon port
+      27020 27021 27022  # ARK RCON ports (Island, Scorched, Aberration)
+    ];
+    allowedUDPPorts = [
+      7777 7778 7779  # ARK game ports (Island, Scorched, Aberration)
+    ];
   };
 
   # Enable IP forwarding for VPN namespace NAT
@@ -256,6 +281,74 @@ in
       Group = "deluge";
       ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd --exit-idle-time=5min 127.0.0.1:58846";
       PrivateNetwork = "yes";
+    };
+  };
+
+  # =============================================================================
+  # ARK Survival Ascended Server Cluster
+  # =============================================================================
+
+
+  # ARK server cluster using OCI containers
+  virtualisation.oci-containers = {
+    backend = "docker";
+    containers = {
+      # The Island - Main server
+      ark-island = {
+        image = "mschnitzer/ark-survival-ascended:latest";
+        autoStart = true;
+        ports = [
+          "7777:7777/udp"
+          "27020:27020/tcp"
+        ];
+        volumes = [
+          "/srv/ark/island:/var/game"
+          "/srv/ark/cluster:/var/cluster"
+        ];
+        environmentFiles = [ config.sops.templates."ark-island.env".path ];
+        extraOptions = [
+          "--memory=14g"
+          "--cpus=4"
+        ];
+      };
+
+      # Scorched Earth
+      ark-scorched = {
+        image = "mschnitzer/ark-survival-ascended:latest";
+        autoStart = true;
+        ports = [
+          "7778:7777/udp"
+          "27021:27020/tcp"
+        ];
+        volumes = [
+          "/srv/ark/scorched:/var/game"
+          "/srv/ark/cluster:/var/cluster"
+        ];
+        environmentFiles = [ config.sops.templates."ark-scorched.env".path ];
+        extraOptions = [
+          "--memory=14g"
+          "--cpus=4"
+        ];
+      };
+
+      # Aberration
+      ark-aberration = {
+        image = "mschnitzer/ark-survival-ascended:latest";
+        autoStart = true;
+        ports = [
+          "7779:7777/udp"
+          "27022:27020/tcp"
+        ];
+        volumes = [
+          "/srv/ark/aberration:/var/game"
+          "/srv/ark/cluster:/var/cluster"
+        ];
+        environmentFiles = [ config.sops.templates."ark-aberration.env".path ];
+        extraOptions = [
+          "--memory=14g"
+          "--cpus=4"
+        ];
+      };
     };
   };
 }
