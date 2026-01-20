@@ -8,7 +8,7 @@ let
 in
 {
   imports = [
-    ./sddm-sugar-dark.nix
+    ./sddm-theme.nix
   ];
   # Ax-shell configuration - only the actual non-default settings needed
   programs.ax-shell = {
