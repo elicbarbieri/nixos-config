@@ -35,6 +35,7 @@ let
     iftop
     lazydocker
     lazygit
+    lazyjj
     btop
     wl-clipboard
     age
