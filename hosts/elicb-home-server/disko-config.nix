@@ -46,21 +46,30 @@
                     mountOptions = [ "compress=zstd" ];
                   };
                   # ARK Survival Ascended servers
+                  # Steam/SteamCMD - large, static, no snapshots needed
+                  "@asa_steam" = {
+                    mountpoint = "/srv/ark/steam";
+                    mountOptions = [ "noatime" ];
+                  };
+
+                  # Server save data - snapshot these for backups
                   "@asa_island" = {
                     mountpoint = "/srv/ark/island";
-                    mountOptions = [ "compress=zstd" ];
+                    mountOptions = [ "compress=zstd" "noatime" ];
                   };
                   "@asa_scorched" = {
                     mountpoint = "/srv/ark/scorched";
-                    mountOptions = [ "compress=zstd" ];
+                    mountOptions = [ "compress=zstd" "noatime" ];
                   };
                   "@asa_aberration" = {
                     mountpoint = "/srv/ark/aberration";
-                    mountOptions = [ "compress=zstd" ];
+                    mountOptions = [ "compress=zstd" "noatime" ];
                   };
+
+                  # Cluster data - shared between servers, must be snapshotted together
                   "@asa_cluster" = {
                     mountpoint = "/srv/ark/cluster";
-                    mountOptions = [ "compress=zstd" ];
+                    mountOptions = [ "compress=zstd" "noatime" ];
                   };
                 };
               };

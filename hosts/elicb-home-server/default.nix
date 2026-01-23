@@ -8,6 +8,7 @@ in
   imports = [
     ./hardware-configuration.nix
     ./disko-config.nix
+    ./ark.nix
   ];
 
   # sops-nix configuration
@@ -31,22 +32,6 @@ in
       "ark/server-password" = {};
     };
 
-    # ARK server environment templates with secrets
-    templates."ark-island.env" = {
-      content = ''
-        ASA_START_PARAMS=TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=y5YKVK4wfc4J -ClusterDirOverride=/var/cluster -NoTransferFromFiltering -mods=1195096,1099220,929420
-      '';
-    };
-    templates."ark-scorched.env" = {
-      content = ''
-        ASA_START_PARAMS=ScorchedEarth_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=y5YKVK4wfc4J -ClusterDirOverride=/var/cluster -NoTransferFromFiltering -mods=1195096,1099220,929420
-      '';
-    };
-    templates."ark-aberration.env" = {
-      content = ''
-        ASA_START_PARAMS=Aberration_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=y5YKVK4wfc4J -ClusterDirOverride=/var/cluster -NoTransferFromFiltering -mods=1195096,1099220,929420
-      '';
-    };
   };
 
   # UUID: b0de9c80:a5ac423d:61f20052:ba33e57e (RAID array UUID)
@@ -284,71 +269,6 @@ in
     };
   };
 
-  # =============================================================================
-  # ARK Survival Ascended Server Cluster
-  # =============================================================================
-
-
-  # ARK server cluster using OCI containers
-  virtualisation.oci-containers = {
-    backend = "docker";
-    containers = {
-      # The Island - Main server
-      ark-island = {
-        image = "mschnitzer/ark-survival-ascended:latest";
-        autoStart = true;
-        ports = [
-          "7777:7777/udp"
-          "27020:27020/tcp"
-        ];
-        volumes = [
-          "/srv/ark/island:/var/game"
-          "/srv/ark/cluster:/var/cluster"
-        ];
-        environmentFiles = [ config.sops.templates."ark-island.env".path ];
-        extraOptions = [
-          "--memory=14g"
-          "--cpus=4"
-        ];
-      };
-
-      # Scorched Earth
-      ark-scorched = {
-        image = "mschnitzer/ark-survival-ascended:latest";
-        autoStart = true;
-        ports = [
-          "7778:7777/udp"
-          "27021:27020/tcp"
-        ];
-        volumes = [
-          "/srv/ark/scorched:/var/game"
-          "/srv/ark/cluster:/var/cluster"
-        ];
-        environmentFiles = [ config.sops.templates."ark-scorched.env".path ];
-        extraOptions = [
-          "--memory=14g"
-          "--cpus=4"
-        ];
-      };
-
-      # Aberration
-      ark-aberration = {
-        image = "mschnitzer/ark-survival-ascended:latest";
-        autoStart = true;
-        ports = [
-          "7779:7777/udp"
-          "27022:27020/tcp"
-        ];
-        volumes = [
-          "/srv/ark/aberration:/var/game"
-          "/srv/ark/cluster:/var/cluster"
-        ];
-        environmentFiles = [ config.sops.templates."ark-aberration.env".path ];
-        extraOptions = [
-          "--memory=14g"
-          "--cpus=4"
-        ];
-      };
-    };
-  };
+  # Docker container backend (containers defined in ark.nix)
+  virtualisation.oci-containers.backend = "docker";
 }
