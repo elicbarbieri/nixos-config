@@ -207,7 +207,7 @@ let
 
       echo "=== ARK Config Sync: ${map} ==="
 
-      # Check if config files exist (ARK must create these on first run)
+      # GameUserSettings.ini must exist (created by ARK on first run)
       if [[ ! -f "${gameUserSettingsFile}" ]]; then
         echo "WARNING: ${gameUserSettingsFile} does not exist."
         echo "ARK needs to run once to create default configs."
@@ -215,11 +215,10 @@ let
         exit 0
       fi
 
+      # Game.ini is NOT auto-created by ASA - create it with proper header if missing
       if [[ ! -f "${gameIniFile}" ]]; then
-        echo "WARNING: ${gameIniFile} does not exist."
-        echo "ARK needs to run once to create default configs."
-        echo "Skipping config sync - server will start with defaults."
-        exit 0
+        echo "Creating ${gameIniFile} (ASA does not auto-create this file)..."
+        echo "[/script/shootergame.shootergamemode]" > "${gameIniFile}"
       fi
 
       echo "Applying managed settings to GameUserSettings.ini..."
@@ -264,13 +263,13 @@ in
   # ===========================================================================
 
   sops.templates."ark-island.env".content = ''
-    ASA_START_PARAMS=TheIsland_WP?listen?SessionName=NA-G-Chat-Island?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -mods=${modString}
+    ASA_START_PARAMS=TheIsland_WP?listen?SessionName=NA-G-Chat-Island?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
   sops.templates."ark-scorched.env".content = ''
-    ASA_START_PARAMS=ScorchedEarth_WP?listen?SessionName=NA-G-Chat-Scorched?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -mods=${modString}
+    ASA_START_PARAMS=ScorchedEarth_WP?listen?SessionName=NA-G-Chat-Scorched?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
   sops.templates."ark-aberration.env".content = ''
-    ASA_START_PARAMS=Aberration_WP?listen?SessionName=NA-G-Chat-Aberration?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -mods=${modString}
+    ASA_START_PARAMS=Aberration_WP?listen?SessionName=NA-G-Chat-Aberration?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
 
   # ===========================================================================
