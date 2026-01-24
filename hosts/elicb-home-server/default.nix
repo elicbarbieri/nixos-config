@@ -26,7 +26,7 @@ in
         owner = "systemd-network";
         group = "systemd-network";
         mode = "0400";
-        restartUnits = [ "systemd-networkd-wireguard-wg0.service" ];
+        restartUnits = [ "wireguard-wg-vpn.service" ];
       };
       "ark/admin-password" = {};
       "ark/server-password" = {};
@@ -66,7 +66,9 @@ in
       27020 27021 27022  # ARK RCON ports (Island, Scorched, Aberration)
     ];
     allowedUDPPorts = [
-      7777 7778 7779  # ARK game ports (Island, Scorched, Aberration)
+      7777 7778       # ARK Island (game + query)
+      7779 7780       # ARK Scorched (game + query)
+      7781 7782       # ARK Aberration (game + query)
     ];
   };
 
@@ -144,7 +146,7 @@ in
     description = "Setup VPN network namespace with veth pair";
     after = [ "netns@vpn.service" "network-online.target" ];
     requires = [ "netns@vpn.service" "network-online.target" ];
-    before = [ "wireguard-wg0.service" ];
+    before = [ "wireguard-wg-vpn.service" ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
@@ -190,7 +192,7 @@ in
     };
   };
 
-  networking.wireguard.interfaces.wg0 = {
+  networking.wireguard.interfaces.wg-vpn = {
     ips = [ "10.140.151.141/32" ];
     mtu = 1320;
     privateKeyFile = config.sops.secrets."airvpn/wireguard-private-key".path;
@@ -212,12 +214,16 @@ in
     }];
 
     preSetup = ''
+      # Cleanup any stale interface from previous failed runs
+      ${pkgs.iproute2}/bin/ip link delete wg-vpn 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link delete wg-vpn 2>/dev/null || true
+
       # namespace DNS configuration (AirVPN DNS)
       mkdir -p /etc/netns/vpn
       echo "nameserver 10.128.0.1" > /etc/netns/vpn/resolv.conf
       chmod 644 /etc/netns/vpn/resolv.conf
 
-      echo "WireGuard preSetup: VPN namespace verified, DNS configured"
+      echo "WireGuard preSetup: Cleaned up stale interfaces, DNS configured"
     '';
 
     postSetup = ''
@@ -225,7 +231,7 @@ in
 
       ${pkgs.iproute2}/bin/ip -n vpn route flush table main   # KILLSWITCH: Flush ALL routes in VPN namespace
 
-      ${pkgs.iproute2}/bin/ip -n vpn route add default dev wg0
+      ${pkgs.iproute2}/bin/ip -n vpn route add default dev wg-vpn
       ${pkgs.iproute2}/bin/ip -n vpn route add 10.200.200.0/24 dev veth-vpn scope link  # Add veth route for proxy communication (link-local scope, no gateway)
     '';
 
@@ -237,9 +243,9 @@ in
 
   # Bind deluged to VPN namespace - traffic only flows through VPN tunnel
   systemd.services.deluged = {
-    bindsTo = [ "netns@vpn.service" "wireguard-wg0.target" ];
-    requires = [ "wireguard-wg0.target" ];
-    after = [ "wireguard-wg0.target" ];
+    bindsTo = [ "netns@vpn.service" "wireguard-wg-vpn.target" ];
+    requires = [ "wireguard-wg-vpn.target" ];
+    after = [ "wireguard-wg-vpn.target" ];
 
     serviceConfig = {
       NetworkNamespacePath = "/var/run/netns/vpn";

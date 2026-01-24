@@ -234,13 +234,14 @@ ${mkCrudiniCommands gameIniFile (getGameIniSettings map)}
   # CONTAINER DEFINITION
   # =============================================================================
 
-  mkArkServer = { map, mapName, sessionName, gamePort, rconPort }: {
+  mkArkServer = { map, mapName, sessionName, gamePort, queryPort, rconPort }: {
     image = "mschnitzer/asa-linux-server:latest";
     autoStart = true;
     entrypoint = "/usr/bin/start_server";
     user = "gameserver";
     ports = [
       "${toString gamePort}:7777/udp"
+      "${toString queryPort}:7778/udp"
       "${toString rconPort}:27020/tcp"
     ];
     volumes = [
@@ -301,6 +302,7 @@ in
       mapName = "TheIsland_WP";
       sessionName = "NA-G-Chat-Island";
       gamePort = 7777;
+      queryPort = 7778;
       rconPort = 27020;
     };
 
@@ -308,7 +310,8 @@ in
       map = "scorched";
       mapName = "ScorchedEarth_WP";
       sessionName = "NA-G-Chat-Scorched";
-      gamePort = 7778;
+      gamePort = 7779;
+      queryPort = 7780;
       rconPort = 27021;
     };
 
@@ -316,7 +319,8 @@ in
       map = "aberration";
       mapName = "Aberration_WP";
       sessionName = "NA-G-Chat-Aberration";
-      gamePort = 7779;
+      gamePort = 7781;
+      queryPort = 7782;
       rconPort = 27022;
     };
   };
