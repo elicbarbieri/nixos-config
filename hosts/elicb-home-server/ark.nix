@@ -70,6 +70,13 @@ let
       ForceAllowCaveFlyers = "True";
       PreventDiseases = "False";
       NonPermanentDiseases = "True";
+      ItemStackSizeMultiplier = 5.0;
+
+      # -- Cryopods --
+      DisableCryopodFridgeRequirement = "True";
+      DisableCryopodEnemyCheck = "True";
+      AllowCryoFridgeOnSaddle = "True";
+      EnableCryopodNerf = "False";
 
       # -- Cluster/Transfers --
       NoTributeDownloads = "False";
@@ -100,6 +107,7 @@ let
       BabyMatureSpeedMultiplier = 10.0;
       MatingIntervalMultiplier = 0.1;
       LayEggIntervalMultiplier = 0.5;
+      BabyImprintAmountMultiplier = 2.0;  # More imprint % per cuddle
 
       # -- Harvesting --
       DinoHarvestingDamageMultiplier = 2.0;
@@ -121,8 +129,15 @@ let
       bAllowCustomRecipes = "True";
       bAllowUnlimitedRespecs = "True";
       bUseCorpseLocator = "True";
-      bAllowFlyerSpeedLeveling = "True";
+      bAllowSpeedLeveling = "True";        # Ground dino speed leveling
+      bAllowFlyerSpeedLeveling = "True";   # Flyer speed (mod 937389 fixes this)
       MaxDifficulty = "True";
+
+      # -- Player Stats Per Level --
+      # Index: 0=Health 1=Stamina 2=Torpidity 3=Oxygen 4=Food 5=Water 6=Temp 7=Weight 8=Melee 9=Speed 10=Fortitude
+      "PerLevelStatsMultiplier_Player[1]" = 2.0;   # Stamina
+      "PerLevelStatsMultiplier_Player[7]" = 3.0;   # Weight
+      "PerLevelStatsMultiplier_Player[10]" = 2.0;  # Fortitude
 
       # -- Dino Stat Multipliers (per level) --
       # Index: 0=Health 1=Stamina 2=Torpidity 3=Oxygen 4=Food 5=Water 6=Temp 7=Weight 8=Melee 9=Speed 10=Fortitude
@@ -133,15 +148,16 @@ let
       #
       # Per-level gains (slightly boosted)
       "PerLevelStatsMultiplier_DinoTamed[0]" = 1.2;   # Health
+      "PerLevelStatsMultiplier_DinoTamed[1]" = 1.5;   # Stamina (QoL)
       "PerLevelStatsMultiplier_DinoTamed[7]" = 2.0;   # Weight (QoL)
       "PerLevelStatsMultiplier_DinoTamed[8]" = 1.2;   # Melee
+      "PerLevelStatsMultiplier_DinoTamed[9]" = 1.5;   # Speed (QoL)
+
       # Taming effectiveness bonuses (better rolls on tame)
       "PerLevelStatsMultiplier_DinoTamed_Add[0]" = 1.2;      # Health bonus
-      "PerLevelStatsMultiplier_DinoTamed_Add[7]" = 1.5;      # Weight bonus
       "PerLevelStatsMultiplier_DinoTamed_Add[8]" = 1.2;      # Melee bonus
-      "PerLevelStatsMultiplier_DinoTamed_Affinity[0]" = 1.2; # Health effectiveness
-      "PerLevelStatsMultiplier_DinoTamed_Affinity[7]" = 1.5; # Weight effectiveness
-      "PerLevelStatsMultiplier_DinoTamed_Affinity[8]" = 1.2; # Melee effectiveness
+      "PerLevelStatsMultiplier_DinoTamed_Affinity[0]" = 1.5; # Health effectiveness
+      "PerLevelStatsMultiplier_DinoTamed_Affinity[8]" = 1.5; # Melee effectiveness
     };
   };
 
@@ -164,8 +180,11 @@ let
   # =============================================================================
   # MODS & CLUSTER
   # =============================================================================
-
-  mods = [ "1195096" "1099220" "929420" ];
+  mods = [
+    "1195096" # Genetic Traits Mutator
+    "1099220"  # Better Traits (No-DLC TraitScanner and Storage)
+    "929420"   # Super Spyglass Plus
+  ];
   modString = lib.concatStringsSep "," mods;
   clusterID = "y5YKVK4wfc4J";
 
@@ -234,16 +253,11 @@ ${mkCrudiniCommands gameIniFile (getGameIniSettings map)}
   # CONTAINER DEFINITION
   # =============================================================================
 
-  mkArkServer = { map, mapName, sessionName, gamePort, queryPort, rconPort }: {
+  mkArkServer = { map }: {
     image = "mschnitzer/asa-linux-server:latest";
     autoStart = true;
     entrypoint = "/usr/bin/start_server";
     user = "gameserver";
-    ports = [
-      "${toString gamePort}:7777/udp"
-      "${toString queryPort}:7778/udp"
-      "${toString rconPort}:27020/tcp"
-    ];
     volumes = [
       "/srv/ark/${map}:/home/gameserver/server-files:rw"
       "/srv/ark/steam/${map}/steam:/home/gameserver/Steam:rw"
@@ -252,7 +266,7 @@ ${mkCrudiniCommands gameIniFile (getGameIniSettings map)}
       "/etc/localtime:/etc/localtime:ro"
     ];
     environmentFiles = [ config.sops.templates."ark-${map}.env".path ];
-    extraOptions = [ "--memory=14g" "--cpus=4" "--tty" ];
+    extraOptions = [ "--memory=14g" "--cpus=4" "--tty" "--network=host" ];
   };
 
   maps = [ "island" "scorched" "aberration" ];
@@ -263,14 +277,18 @@ in
   # SOPS TEMPLATES
   # ===========================================================================
 
+  # With host networking, each server needs unique ports
+  # Island: 7777 (game) + 7778 (query auto), RCON 27020
+  # Scorched: 7779 (game) + 7780 (query auto), RCON 27021
+  # Aberration: 7781 (game) + 7782 (query auto), RCON 27022
   sops.templates."ark-island.env".content = ''
     ASA_START_PARAMS=TheIsland_WP?listen?SessionName=NA-G-Chat-Island?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
   sops.templates."ark-scorched.env".content = ''
-    ASA_START_PARAMS=ScorchedEarth_WP?listen?SessionName=NA-G-Chat-Scorched?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
+    ASA_START_PARAMS=ScorchedEarth_WP?listen?SessionName=NA-G-Chat-Scorched?Port=7779?RCONPort=27021?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
   sops.templates."ark-aberration.env".content = ''
-    ASA_START_PARAMS=Aberration_WP?listen?SessionName=NA-G-Chat-Aberration?Port=7777?RCONPort=27020?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
+    ASA_START_PARAMS=Aberration_WP?listen?SessionName=NA-G-Chat-Aberration?Port=7781?RCONPort=27022?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
 
   # ===========================================================================
@@ -297,31 +315,8 @@ in
   # ===========================================================================
 
   virtualisation.oci-containers.containers = {
-    ark-island = mkArkServer {
-      map = "island";
-      mapName = "TheIsland_WP";
-      sessionName = "NA-G-Chat-Island";
-      gamePort = 7777;
-      queryPort = 7778;
-      rconPort = 27020;
-    };
-
-    ark-scorched = mkArkServer {
-      map = "scorched";
-      mapName = "ScorchedEarth_WP";
-      sessionName = "NA-G-Chat-Scorched";
-      gamePort = 7779;
-      queryPort = 7780;
-      rconPort = 27021;
-    };
-
-    ark-aberration = mkArkServer {
-      map = "aberration";
-      mapName = "Aberration_WP";
-      sessionName = "NA-G-Chat-Aberration";
-      gamePort = 7781;
-      queryPort = 7782;
-      rconPort = 27022;
-    };
+    ark-island = mkArkServer { map = "island"; };
+    ark-scorched = mkArkServer { map = "scorched"; };
+    ark-aberration = mkArkServer { map = "aberration"; };
   };
 }
