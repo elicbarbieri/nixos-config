@@ -105,10 +105,12 @@ in
       allow_remote = true;
       download_location = "/mnt/deepstor/media/";
 
-      # Port forwarding (AirVPN forwarded ports)
-      listen_ports = [ 24403 24404 24405 24406 24407 ];
+      # Port forwarding (AirVPN forwarded ports: 24403-24407)
+      listen_ports = [ 24403 24407 ];
       random_port = false;
       listen_interface = "0.0.0.0";
+      outgoing_ports = [ 24403 24407 ];
+      random_outgoing_ports = false;
 
       max_active_limit = -1;              # Unlimited active torrents
       max_active_downloading = 10;         # 10 downloading simultaneously

@@ -17,13 +17,14 @@ let
       OverrideOfficialDifficulty = 5.0;  # Max wild dino level 150
 
       # -- Server Type --
-      ServerPVE = "True";
+      ServerPVE = "False";  # PvP mode
       ServerHardcore = "False";
       AllowThirdPersonPlayer = "True";
       ServerCrosshair = "True";
       ShowMapPlayerLocation = "True";
       ShowFloatingDamageText = "True";
       AllowHitMarkers = "True";
+      EnablePvPGamma = "True";  # Allow gamma adjustment in PvP
 
       # -- XP & Harvesting --
       XPMultiplier = 3.0;
@@ -32,7 +33,7 @@ let
       ResourcesRespawnPeriodMultiplier = 0.25;
 
       # -- Taming --
-      TamingSpeedMultiplier = 3.0;
+      TamingSpeedMultiplier = 5.0;
       AllowRaidDinoFeeding = "False";
 
       # -- Dino Stats --
@@ -84,6 +85,10 @@ let
       PreventDownloadItems = "False";
       PreventDownloadDinos = "False";
 
+      # -- Offline Raid Protection --
+      PreventOfflinePvP = "True";       # Structures/dinos invulnerable when tribe offline
+      PreventOfflinePvPInterval = 900;  # 15 min delay before ORP activates
+
       # -- Server Limits --
       MaxTamedDinos = 5000;
       KickIdlePlayersPeriod = 3600;
@@ -100,7 +105,7 @@ let
     "/Script/ShooterGame.ShooterGameMode" = {
       # -- Breeding --
       BabyImprintingStatScaleMultiplier = 2.0;
-      BabyCuddleIntervalMultiplier = 0.25;
+      BabyCuddleIntervalMultiplier = 0.2;
       BabyCuddleGracePeriodMultiplier = 2.0;
       BabyFoodConsumptionSpeedMultiplier = 1.0;
       EggHatchSpeedMultiplier = 5.0;
@@ -141,23 +146,12 @@ let
 
       # -- Dino Stat Multipliers (per level) --
       # Index: 0=Health 1=Stamina 2=Torpidity 3=Oxygen 4=Food 5=Water 6=Temp 7=Weight 8=Melee 9=Speed 10=Fortitude
-      #
-      # _DinoTamed = stat gain per level-up after taming
-      # _DinoTamed_Add = bonus stats from taming effectiveness levels
-      # _DinoTamed_Affinity = taming effectiveness contribution to bonus stats
-      #
-      # Per-level gains (slightly boosted)
-      "PerLevelStatsMultiplier_DinoTamed[0]" = 1.2;   # Health
-      "PerLevelStatsMultiplier_DinoTamed[1]" = 1.5;   # Stamina (QoL)
-      "PerLevelStatsMultiplier_DinoTamed[7]" = 2.0;   # Weight (QoL)
-      "PerLevelStatsMultiplier_DinoTamed[8]" = 1.2;   # Melee
-      "PerLevelStatsMultiplier_DinoTamed[9]" = 1.5;   # Speed (QoL)
-
-      # Taming effectiveness bonuses (better rolls on tame)
-      "PerLevelStatsMultiplier_DinoTamed_Add[0]" = 1.2;      # Health bonus
-      "PerLevelStatsMultiplier_DinoTamed_Add[8]" = 1.2;      # Melee bonus
-      "PerLevelStatsMultiplier_DinoTamed_Affinity[0]" = 1.5; # Health effectiveness
-      "PerLevelStatsMultiplier_DinoTamed_Affinity[8]" = 1.5; # Melee effectiveness
+      # DEFAULTS: Health=0.09, Stamina=1, Weight=1, Melee=0.07, Speed=1
+      "PerLevelStatsMultiplier_DinoTamed[0]" = 0.18;   # Health (2x default)
+      "PerLevelStatsMultiplier_DinoTamed[1]" = 2.0;    # Stamina (2x default)
+      "PerLevelStatsMultiplier_DinoTamed[7]" = 2.0;    # Weight (2x default)
+      "PerLevelStatsMultiplier_DinoTamed[8]" = 0.14;   # Melee (2x default)
+      "PerLevelStatsMultiplier_DinoTamed[9]" = 3.0;    # Speed (3x default)
     };
   };
 
