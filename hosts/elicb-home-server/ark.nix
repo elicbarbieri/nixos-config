@@ -257,6 +257,7 @@ ${mkCrudiniCommands gameIniFile (getGameIniSettings map)}
       "/srv/ark/steam/${map}/steam:/home/gameserver/Steam:rw"
       "/srv/ark/steam/${map}/steamcmd:/home/gameserver/steamcmd:rw"
       "/srv/ark/cluster:/home/gameserver/cluster-shared:rw"
+      "/srv/ark/shared/PlayersJoinNoCheckList.txt:/home/gameserver/server-files/ShooterGame/Binaries/Win64/PlayersJoinNoCheckList.txt:ro"
       "/etc/localtime:/etc/localtime:ro"
     ];
     environmentFiles = [ config.sops.templates."ark-${map}.env".path ];
@@ -284,6 +285,16 @@ in
   sops.templates."ark-aberration.env".content = ''
     ASA_START_PARAMS=Aberration_WP?listen?SessionName=NA-G-Chat-Aberration?Port=7781?RCONPort=27022?RCONEnabled=True?ServerPassword=${config.sops.placeholder."ark/server-password"}?ServerAdminPassword=${config.sops.placeholder."ark/admin-password"} -WinLiveMaxPlayers=20 -clusterid=${clusterID} -ClusterDirOverride="/home/gameserver/cluster-shared" -NoTransferFromFiltering -NoBattlEye -AllowFlyerSpeedLeveling -mods=${modString}
   '';
+
+  # ===========================================================================
+  # SHARED FILES
+  # ===========================================================================
+  # Ensure shared whitelist file exists for cluster-wide password bypass
+
+  systemd.tmpfiles.rules = [
+    "d /srv/ark/shared 0755 1000 1000 -"
+    "f /srv/ark/shared/PlayersJoinNoCheckList.txt 0644 1000 1000 -"
+  ];
 
   # ===========================================================================
   # CONFIG SYNC SERVICES
