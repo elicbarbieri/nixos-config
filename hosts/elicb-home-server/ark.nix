@@ -78,6 +78,7 @@ let
       DisableCryopodEnemyCheck = "True";
       AllowCryoFridgeOnSaddle = "True";
       EnableCryopodNerf = "False";
+      EnableCryoSicknessPVP = "False";
 
       # -- Cluster/Transfers --
       NoTributeDownloads = "False";
