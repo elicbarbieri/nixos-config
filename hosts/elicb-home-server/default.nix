@@ -9,6 +9,7 @@ in
     ./hardware-configuration.nix
     ./disko-config.nix
     ./ark.nix
+    ./minecraft.nix
   ];
 
   # sops-nix configuration

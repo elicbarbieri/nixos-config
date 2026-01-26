@@ -45,6 +45,10 @@
                     mountpoint = "/srv/minecraft/121_vanilla";
                     mountOptions = [ "compress=zstd" ];
                   };
+                  "@minecraft_g_chat_create" = {
+                    mountpoint = "/srv/minecraft/g_chat_create";
+                    mountOptions = [ "compress=zstd" ];
+                  };
                   # ARK Survival Ascended servers
                   # Steam/SteamCMD - large, static, no snapshots needed
                   "@asa_steam" = {
