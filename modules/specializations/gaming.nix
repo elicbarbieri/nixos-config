@@ -44,6 +44,8 @@
     gamemode
     gamescope
     mangohud
+
+    prismlauncher
   ];
 
   programs.gamemode.enable = true;

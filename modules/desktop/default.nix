@@ -122,7 +122,6 @@ in
     enable = true;
     packages = [
       "com.spotify.Client"
-      "com.modrinth.ModrinthApp"
     ];
     update.auto = {
       enable = true;
