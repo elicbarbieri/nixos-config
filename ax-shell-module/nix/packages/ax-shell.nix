@@ -43,14 +43,14 @@
 
 python3Packages.buildPythonApplication rec {
   pname = "ax-shell";
-  version = "v0.0.62";
+  version = "v0.0.63";
   format = "other";
 
   src = fetchFromGitHub {
-    owner = "Axenide";
-    repo = "Ax-Shell";
-    rev = "e8604047408a818785b32c4a5d1c1e1c8b09b7e3";
-    sha256 = "sha256-iVUpIUSli234kwZsw9pOXu9hiR+7ws4x6AdlZyjTRbI=";
+    owner = "elicbarbieri";
+    repo = "ax-shell";
+    rev = "321b6ec8b1c3314db16e30df93d58129b1292eab";
+    sha256 = "sha256-e4vdbDMtfpXNpZrcXX/53J1oHqa8ZA2o24sPpWLx0IQ=";
   };
 
   # Core Python dependencies
@@ -212,7 +212,7 @@ EOF
       It provides a complete desktop experience with panel, dock, launcher, and
       system management capabilities.
     '';
-    homepage = "https://github.com/Axenide/Ax-Shell";
+    homepage = "https://github.com/elicbarbieri/ax-shell";
     license = licenses.gpl3Plus;
     platforms = platforms.linux;
     maintainers = with maintainers; [ /* add your maintainer info here */ ];
