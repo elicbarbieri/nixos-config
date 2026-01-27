@@ -2,13 +2,6 @@
 # RTX 2070 Super - Dedicated GPU
 { config, pkgs, lib, ... }:
 
-let
-  # Custom EDID firmware for Sceptre F27 monitor (has buggy EDID via DP->HDMI adapter)
-  sceptreEdid = pkgs.runCommandLocal "sceptre-edid-firmware" {} ''
-    mkdir -p $out/lib/firmware/edid
-    cp ${../../assets/edid/sceptre-f27-1080p60.bin} $out/lib/firmware/edid/sceptre-f27-1080p60.bin
-  '';
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -16,6 +9,9 @@ in
   ];
 
   networking.hostName = "elicb-dell-desktop";
+
+  # Ax-shell: only show bar on primary monitor (DP-1)
+  programs.ax-shell.selectedMonitors = [ "DP-1" ];
 
   # NVIDIA dedicated GPU configuration (no PRIME needed)
   services.xserver.videoDrivers = [ "nvidia" ];
@@ -27,7 +23,7 @@ in
     powerManagement.finegrained = false;
     open = false;  # Use proprietary driver for RTX 2070 Super
     nvidiaSettings = true;
-    
+
     # No PRIME configuration needed - dedicated GPU only
     # prime.intelBusId and prime.nvidiaBusId intentionally not set
   };
@@ -38,9 +34,27 @@ in
   };
 
   # EDID override for Sceptre F27 monitor on DP-3 (connected via DP->HDMI adapter)
-  # This fixes EDID detection issues with the monitor's buggy firmware
-  hardware.firmware = [ sceptreEdid ];
-  boot.kernelParams = [ "drm.edid_firmware=DP-3:edid/sceptre-f27-1080p60.bin" ];
+  # NOTE: drm.edid_firmware does NOT work with NVIDIA proprietary driver
+  # Using debugfs workaround via systemd service instead
+  hardware.display = {
+    edid.modelines = {
+      # Standard 1920x1080@60Hz timing (148.5 MHz pixel clock)
+      "f27-1080p60" = "148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync";
+    };
+    # Don't set outputs - we'll apply EDID via debugfs instead
+  };
+
+  # Systemd service to apply EDID override via debugfs (workaround for NVIDIA ignoring drm.edid_firmware)
+  systemd.services.nvidia-edid-override = {
+    description = "Apply custom EDID for Sceptre F27 monitor via debugfs";
+    wantedBy = [ "graphical.target" ];
+    after = [ "systemd-modules-load.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 2 && cat /run/current-system/firmware/edid/f27-1080p60.bin > /sys/kernel/debug/dri/1/DP-3/edid_override'";
+    };
+  };
 
   # Docker firewall configuration
   networking.firewall = {
@@ -49,7 +63,7 @@ in
   };
 
   # User groups for this host
-  users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "wireshark" ];
+  users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "wireshark" "i2c" ];
 
   # Gaming specialization only (no low-power or kubernetes for desktop)
   specialisation = {

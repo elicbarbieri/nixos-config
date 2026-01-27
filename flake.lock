@@ -39,11 +39,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1769458868,
-        "narHash": "sha256-YGRzbxS4CEjcGBvsCgE6ZgAtnnsYFCUSnQoBGyTiplo=",
+        "lastModified": 1769556260,
+        "narHash": "sha256-5sfanVHKTywrzCtyh02U6VqC6GWtB8dnXH1eulZBzKY=",
         "owner": "elicbarbieri",
         "repo": "ax-shell",
-        "rev": "e3760fab411458371bd30588bf6aef9aba19a519",
+        "rev": "c1040b7e50f6536175a59941669f147adc127d87",
         "type": "github"
       },
       "original": {

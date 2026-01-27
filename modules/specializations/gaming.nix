@@ -46,6 +46,8 @@
     mangohud
 
     prismlauncher
+
+    heroic
   ];
 
   programs.gamemode.enable = true;

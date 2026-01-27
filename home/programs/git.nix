@@ -5,7 +5,9 @@ let
     [user]
       name = Eli Barbieri
       email = elicbarbieri@gmail.com
-      signingkey = FC47C35DCE0A045C
+      signingkey = ~/.ssh/id_ed25519.pub
+    [gpg]
+      format = ssh
     [init]
       defaultBranch = master
     [commit]
