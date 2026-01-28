@@ -99,21 +99,26 @@ let
     "/Script/Engine.GameSession" = {
       MaxPlayers = 20;
     };
+
+    # Cryo Sickness Protection mod - forces protection server-wide on vanilla cryopods
+    CryoSicknessProtection = {
+      bForceProtection = "True";          # Automatic server-wide, no player action needed
+    };
   };
 
   # Game.ini settings
   gameIniSettings = {
     "/Script/ShooterGame.ShooterGameMode" = {
-      # -- Breeding --
+      # -- Breeding (20x speed with 12-min cuddles) --
       BabyImprintingStatScaleMultiplier = 2.0;
-      BabyCuddleIntervalMultiplier = 0.2;
+      BabyCuddleIntervalMultiplier = 0.025;     # 12 minutes between cuddles
       BabyCuddleGracePeriodMultiplier = 2.0;
       BabyFoodConsumptionSpeedMultiplier = 1.0;
-      EggHatchSpeedMultiplier = 5.0;
-      BabyMatureSpeedMultiplier = 10.0;
-      MatingIntervalMultiplier = 0.1;
+      EggHatchSpeedMultiplier = 20.0;           # Match mature speed
+      BabyMatureSpeedMultiplier = 20.0;         # 20x faster maturation
+      MatingIntervalMultiplier = 0.05;          # 20x faster mating interval
       LayEggIntervalMultiplier = 0.5;
-      BabyImprintAmountMultiplier = 2.0;  # More imprint % per cuddle
+      BabyImprintAmountMultiplier = 3.0;        # ~33% per cuddle (3 cuddles = 100%)
 
       # -- Harvesting --
       DinoHarvestingDamageMultiplier = 2.0;
@@ -176,9 +181,11 @@ let
   # MODS & CLUSTER
   # =============================================================================
   mods = [
-    "1195096" # Genetic Traits Mutator
+    "1195096"  # Genetic Traits Mutator
     "1099220"  # Better Traits (No-DLC TraitScanner and Storage)
     "929420"   # Super Spyglass Plus
+    "989002"   # Cryo Sickness Protection - Auto server-wide, works on vanilla cryopods
+    "935399"   # Improved Egg Incubator - Auto incubation & mutation viewing
   ];
   modString = lib.concatStringsSep "," mods;
   clusterID = "y5YKVK4wfc4J";
