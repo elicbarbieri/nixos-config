@@ -34,6 +34,7 @@ in
       glibc
       util-linux  # provides libuuid
       expat
+      xorg.libxcb  # X11 protocol (needed by OpenCV/cv2)
     ];
   };
 
