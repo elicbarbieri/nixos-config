@@ -106,6 +106,7 @@ in
       enable = true;
       powerOnBoot = true;
     };
+    keyboard.zsa.enable = true;  # ZSA keyboard support (udev rules)
   };
 
   # Security
@@ -133,6 +134,7 @@ in
 
     # Core HID deps
     keyd
+    keymapp  # ZSA keyboard configurator and flashing tool
     pinentry-rofi-themed
     brightnessctl
 
