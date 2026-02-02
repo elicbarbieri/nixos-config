@@ -66,7 +66,7 @@
             typescript = ["prettier"];
             json = ["prettier"];
             yaml = ["prettier"];
-            markdown = ["prettier"];
+            markdown = ["mdformat"];
             bash = ["shfmt"];
             sql = ["sqlfluff"];
           };
