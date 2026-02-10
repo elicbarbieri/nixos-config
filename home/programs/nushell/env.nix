@@ -11,5 +11,5 @@ $env.STARSHIP_SESSION_KEY = (random chars -l 16)
 $env.PATH = ($env.PATH | split row (char esep))
 $env.PATH = ($env.PATH | prepend $"($env.HOME)/.cargo/bin")
 $env.PATH = ($env.PATH | prepend $"($env.HOME)/.local/bin")
-$env.PATH = ($env.PATH | prepend $"($env.HOME)/.bun/bin")
+$env.PATH = ($env.PATH | prepend $"($env.HOME)/.cache/.bun/bin")
 ''
