@@ -10,6 +10,7 @@ in
     ./disko-config.nix
     ./ark.nix
     ./minecraft.nix
+    ./musicbrainz.nix
   ];
 
   # sops-nix configuration
