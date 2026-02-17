@@ -98,8 +98,8 @@ in
   # ---------------------------------------------------------------------------
   systemd.services.musicbrainz-db-setup = {
     description = "MusicBrainz PostgreSQL extensions and user setup";
-    after = [ "postgresql.service" ];
-    requires = [ "postgresql.service" ];
+    after = [ "postgresql.service" "postgresql-setup.service" ];
+    requires = [ "postgresql.service" "postgresql-setup.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
@@ -109,8 +109,8 @@ in
         pkgs.writeShellScript "musicbrainz-db-setup" ''
           ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS cube;"
           ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS earthdistance;"
-          ${psql} -v "password=$(cat ${config.sops.secrets."musicbrainz/db-password".path})" \
-            -c "ALTER USER musicbrainz PASSWORD :'password';"
+          PW=$(cat ${config.sops.secrets."musicbrainz/db-password".path})
+          ${psql} -c "ALTER ROLE musicbrainz WITH PASSWORD '$PW';"
         '';
     };
   };
