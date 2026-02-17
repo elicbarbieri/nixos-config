@@ -27,6 +27,7 @@ let
     gnupg
     ripgrep
     jq
+    xxd
     tree
     traceroute
     arp-scan

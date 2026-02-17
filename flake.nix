@@ -13,9 +13,10 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+    vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
   };
 
-  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, ... }:
+  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, ... }:
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -85,6 +86,7 @@
           ./modules/vm-variant.nix
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
+          vpn-confinement.nixosModules.default
           # Note: No desktop or performance modules for server
 
           home-manager.nixosModules.home-manager

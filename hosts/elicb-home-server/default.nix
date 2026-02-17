@@ -9,6 +9,7 @@ in
     ./hardware-configuration.nix
     ./disko-config.nix
     ./ark.nix
+    ./arr.nix
     ./minecraft.nix
     ./musicbrainz.nix
   ];
@@ -24,11 +25,8 @@ in
         mode = "0600";
         restartUnits = [ "deluged.service" ];
       };
-      "airvpn/wireguard-private-key" = {
-        owner = "systemd-network";
-        group = "systemd-network";
+      "airvpn/wireguard-conf" = {
         mode = "0400";
-        restartUnits = [ "wireguard-wg-vpn.service" ];
       };
       "ark/admin-password" = {};
       "ark/server-password" = {};
@@ -74,11 +72,6 @@ in
     ];
   };
 
-  # Enable IP forwarding for VPN namespace NAT
-  boot.kernel.sysctl = {
-    "net.ipv4.ip_forward" = 1;
-  };
-
   # Additional groups for server functionality
   users.users.elicb.extraGroups = [ "docker" "deluge" "plex" ];
 
@@ -97,7 +90,7 @@ in
   };
 
   # Allow Plex to read media files downloaded by Deluge
-  users.users.plex.extraGroups = [ "deluge" ];
+  users.users.plex.extraGroups = [ "deluge" "media" ];
 
   services.deluge = {
     enable = true;
@@ -106,7 +99,7 @@ in
     config = {
       daemon_port = 58846;
       allow_remote = true;
-      download_location = "/mnt/deepstor/media/";
+      download_location = "/mnt/deepstor/media/downloads/";
 
       # Port forwarding (AirVPN forwarded ports: 24403-24407)
       listen_ports = [ 24403 24407 ];
@@ -135,149 +128,26 @@ in
     authFile = config.sops.secrets."deluge/auth".path;
   };
 
-  systemd.services."netns@" = {
-    description = "%I network namespace";
-    before = [ "network.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.iproute2}/bin/ip netns add %I";
-      ExecStop = "${pkgs.iproute2}/bin/ip netns del %I";
-    };
-  };
-
-  # Setup VPN namespace with veth pair for initial connectivity
-  systemd.services."netns-vpn-setup" = {
-    description = "Setup VPN network namespace with veth pair";
-    after = [ "netns@vpn.service" "network-online.target" ];
-    requires = [ "netns@vpn.service" "network-online.target" ];
-    before = [ "wireguard-wg-vpn.service" ];
-    wantedBy = [ "multi-user.target" ];
-
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-
-      ExecStart = pkgs.writeShellScript "setup-vpn-netns" ''
-        set -e
-
-        ${pkgs.iproute2}/bin/ip link del veth-host 2>/dev/null || true  # Cleanup any existing veth interfaces
-
-        ${pkgs.iproute2}/bin/ip link add veth-vpn type veth peer name veth-host
-        ${pkgs.iproute2}/bin/ip link set veth-vpn netns vpn    # Move veth-vpn into the VPN namespace
-
-        # Configure host side
-        ${pkgs.iproute2}/bin/ip addr add 10.200.200.1/24 dev veth-host
-        ${pkgs.iproute2}/bin/ip link set veth-host up
-
-        # Configure namespace side
-        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip addr add 10.200.200.2/24 dev veth-vpn
-        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link set veth-vpn up
-        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link set lo up
-
-        # Disable IPv6 in VPN namespace to prevent leaks
-        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.procps}/bin/sysctl -w net.ipv6.conf.all.disable_ipv6=1
-        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.procps}/bin/sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
-        # Enable NAT so namespace can reach VPN server
-        ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.200.200.0/24 -j MASQUERADE
-        ${pkgs.iptables}/bin/iptables -A FORWARD -i veth-host -j ACCEPT
-        ${pkgs.iptables}/bin/iptables -A FORWARD -o veth-host -j ACCEPT
-      '';
-
-      ExecStop = pkgs.writeShellScript "teardown-vpn-netns" ''
-        # Cleanup NAT rules
-        ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.200.200.0/24 -j MASQUERADE 2>/dev/null || true
-        ${pkgs.iptables}/bin/iptables -D FORWARD -i veth-host -j ACCEPT 2>/dev/null || true
-        ${pkgs.iptables}/bin/iptables -D FORWARD -o veth-host -j ACCEPT 2>/dev/null || true
-
-        # Delete veth pair (this also removes it from namespace)
-        ${pkgs.iproute2}/bin/ip link del veth-host 2>/dev/null || true
-      '';
-    };
-  };
-
-  networking.wireguard.interfaces.wg-vpn = {
-    ips = [ "10.140.151.141/32" ];
-    mtu = 1320;
-    privateKeyFile = config.sops.secrets."airvpn/wireguard-private-key".path;
-
-    # Socket in root namespace, interface moved to VPN namespace
-    socketNamespace = null;  # null = root/init namespace
-    interfaceNamespace = "vpn";  # Move interface to VPN namespace
-
-    # Don't let NixOS automatically manage routes - we do it manually for security
-    allowedIPsAsRoutes = false;
-
-    # AirVPN server configuration
-    peers = [{
-      publicKey = "PyLCXAQT8KkM4T+dUsOQfn+Ub3pGxfGlxkIApuig+hk=";
-      presharedKey = "yRx8sd+1PE+lh1E89dJ/HgR2kGN3pGbYwqMhpEpOM6E=";
-      endpoint = "us3.vpn.airdns.org:1637";
-      allowedIPs = [ "0.0.0.0/0" ];
-      persistentKeepalive = 15;
-    }];
-
-    preSetup = ''
-      # Cleanup any stale interface from previous failed runs
-      ${pkgs.iproute2}/bin/ip link delete wg-vpn 2>/dev/null || true
-      ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link delete wg-vpn 2>/dev/null || true
-
-      # namespace DNS configuration (AirVPN DNS)
-      mkdir -p /etc/netns/vpn
-      echo "nameserver 10.128.0.1" > /etc/netns/vpn/resolv.conf
-      chmod 644 /etc/netns/vpn/resolv.conf
-
-      echo "WireGuard preSetup: Cleaned up stale interfaces, DNS configured"
-    '';
-
-    postSetup = ''
-      echo "=== WireGuard postSetup: Configuring killswitch ==="
-
-      ${pkgs.iproute2}/bin/ip -n vpn route flush table main   # KILLSWITCH: Flush ALL routes in VPN namespace
-
-      ${pkgs.iproute2}/bin/ip -n vpn route add default dev wg-vpn
-      ${pkgs.iproute2}/bin/ip -n vpn route add 10.200.200.0/24 dev veth-vpn scope link  # Add veth route for proxy communication (link-local scope, no gateway)
-    '';
-
-    postShutdown = ''
-      rm -rf /etc/netns/vpn
-      echo "WireGuard postShutdown: Cleaned up namespace DNS config"
-    '';
-  };
-
-  # Bind deluged to VPN namespace - traffic only flows through VPN tunnel
-  systemd.services.deluged = {
-    bindsTo = [ "netns@vpn.service" "wireguard-wg-vpn.target" ];
-    requires = [ "wireguard-wg-vpn.target" ];
-    after = [ "wireguard-wg-vpn.target" ];
-
-    serviceConfig = {
-      NetworkNamespacePath = "/var/run/netns/vpn";
-      ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
-    };
-  };
-
-  systemd.sockets."proxy-to-deluged" = {
+  # VPN-Confinement namespace for Deluge
+  vpnNamespaces.wg = {
     enable = true;
-    description = "Socket for Proxy to Deluge Daemon";
-    listenStreams = [ "58846" ];
-    wantedBy = [ "sockets.target" ];
+    wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
+    accessibleFrom = [ "192.168.1.0/24" ];
+    portMappings = [
+      { from = 58846; to = 58846; protocol = "tcp"; }
+    ];
+    openVPNPorts = [
+      { port = 24403; protocol = "both"; }
+      { port = 24404; protocol = "both"; }
+      { port = 24405; protocol = "both"; }
+      { port = 24406; protocol = "both"; }
+      { port = 24407; protocol = "both"; }
+    ];
   };
 
-  # Proxy service that forwards root namespace port to isolated namespace
-  systemd.services."proxy-to-deluged" = {
+  systemd.services.deluged.vpnConfinement = {
     enable = true;
-    description = "Proxy to Deluge Daemon in Network Namespace";
-    requires = [ "deluged.service" "proxy-to-deluged.socket" ];
-    after = [ "deluged.service" "proxy-to-deluged.socket" ];
-    unitConfig = { JoinsNamespaceOf = "deluged.service"; };
-    serviceConfig = {
-      User = "deluge";
-      Group = "deluge";
-      ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd --exit-idle-time=5min 127.0.0.1:58846";
-      PrivateNetwork = "yes";
-    };
+    vpnNamespace = "wg";
   };
 
   # Docker container backend (containers defined in ark.nix)
