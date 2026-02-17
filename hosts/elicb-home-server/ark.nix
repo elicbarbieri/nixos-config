@@ -255,9 +255,9 @@ ${mkCrudiniCommands gameIniFile (getGameIniSettings map)}
   # CONTAINER DEFINITION
   # =============================================================================
 
-  mkArkServer = { map }: {
+  mkArkServer = { map, autoStart ? true }: {
     image = "mschnitzer/asa-linux-server:latest";
-    autoStart = true;
+    inherit autoStart;
     entrypoint = "/usr/bin/start_server";
     user = "gameserver";
     volumes = [
@@ -326,10 +326,11 @@ in
   # ===========================================================================
   # CONTAINERS
   # ===========================================================================
+  # ARK servers can be re-enabled by removing the autoStart = false option from each container
 
   virtualisation.oci-containers.containers = {
-    ark-island = mkArkServer { map = "island"; };
-    ark-scorched = mkArkServer { map = "scorched"; };
-    ark-aberration = mkArkServer { map = "aberration"; };
+    ark-island = mkArkServer { map = "island"; autoStart = false; };
+    ark-scorched = mkArkServer { map = "scorched"; autoStart = false; };
+    ark-aberration = mkArkServer { map = "aberration"; autoStart = false; };
   };
 }
