@@ -1,5 +1,5 @@
 # MusicBrainz + AcoustID Audio Fingerprinting Server
-# 
+#
 # COMPONENTS:
 #   - MusicBrainz: PostgreSQL database with music metadata (~45 GB)
 #     Managed via official MusicBrainz Docker (database-only mirror mode)
@@ -32,21 +32,21 @@
 
 let
   musicbrainzDockerRoot = "/opt/musicbrainz-docker";
-  
+
   # ---------------------------------------------------------------------------
   # acoustid-index: Fast fingerprint search engine (Zig)
   # ---------------------------------------------------------------------------
   acoustid-index = pkgs.stdenv.mkDerivation (finalAttrs: {
     pname = "acoustid-index";
     version = "2025-10-27";
-    
+
     src = pkgs.fetchFromGitHub {
       owner = "acoustid";
       repo = "acoustid-index";
       rev = "6bc929a316e4f3a9c9ec37a395f30e0f5b7116c2";
       hash = "sha256-hqWsbQEEs02p3UOuR5zptKE60GxSPvVoysrrtXx7nyc=";
     };
-    
+
     deps = pkgs.linkFarm "zig-packages" [
       {
         name = "httpz-0.0.0-PNVzrJSuBgDFvO7mtd2qDzaq8_hXIu1BqFuL1jwAV8Ac";
@@ -112,15 +112,15 @@ let
         };
       }
     ];
-    
+
     nativeBuildInputs = [ pkgs.zig_0_14 ];
-    
+
     zigBuildFlags = [
       "-Doptimize=ReleaseFast"
       "--system"
       "${finalAttrs.deps}"
     ];
-    
+
     meta = {
       description = "AcoustID fingerprint search engine";
       homepage = "https://github.com/acoustid/acoustid-index";
@@ -140,18 +140,18 @@ let
     start_date = datetime.strptime(sys.argv[1], "%Y-%m-%d")
     end_date = datetime.strptime(sys.argv[2], "%Y-%m-%d")
     base_url = "https://data.acoustid.org"
-    
+
     current = start_date
     while current <= end_date:
         year, month = current.strftime("%Y"), current.strftime("%Y-%m")
         date_str = current.strftime("%Y-%m-%d")
-        
+
         for file_type in ["fingerprint", "track", "track_mbid"]:
             url = "{}/{}/{}/{}-{}-update.jsonl.gz".format(
                 base_url, year, month, date_str, file_type
             )
             print(url)
-        
+
         current += timedelta(days=1)
   '';
 
@@ -176,7 +176,7 @@ let
         print("  Importing tracks...")
         buffer = StringIO()
         count = 0
-        
+
         with gzip.open(filepath, 'rt') as f:
             for line in f:
                 if not line.strip():
@@ -186,7 +186,7 @@ let
                     gid = data.get('gid') or ""
                     buffer.write("{}\\t{}\\n".format(data['id'], gid))
                     count += 1
-                    
+
                     if count % 50000 == 0:
                         buffer.seek(0)
                         cur.copy_expert(
@@ -199,7 +199,7 @@ let
                 except Exception as e:
                     print("\n    Error: {}".format(e))
                     continue
-        
+
         if buffer.tell() > 0:
             buffer.seek(0)
             cur.copy_expert(
@@ -207,7 +207,7 @@ let
                 buffer
             )
             conn.commit()
-        
+
         print("    {:,} records total".format(count))
         return count
 
@@ -215,7 +215,7 @@ let
         print("  Importing track→MBID mappings...")
         buffer = StringIO()
         count = 0
-        
+
         with gzip.open(filepath, 'rt') as f:
             for line in f:
                 if not line.strip():
@@ -224,7 +224,7 @@ let
                     data = json.loads(line)
                     if data.get('disabled'):
                         continue
-                    
+
                     buffer.write("{}\\t{}\\t{}\\t{}\\n".format(
                         data['id'],
                         data['track_id'],
@@ -232,7 +232,7 @@ let
                         data.get('submission_count', 0)
                     ))
                     count += 1
-                    
+
                     if count % 50000 == 0:
                         buffer.seek(0)
                         cur.copy_expert(
@@ -246,7 +246,7 @@ let
                 except Exception as e:
                     print("\n    Error: {}".format(e))
                     continue
-        
+
         if buffer.tell() > 0:
             buffer.seek(0)
             cur.copy_expert(
@@ -255,7 +255,7 @@ let
                 buffer
             )
             conn.commit()
-        
+
         print("    {:,} records total".format(count))
         return count
 
@@ -263,7 +263,7 @@ let
         print("  Processing fingerprints...")
         fp_file = "{}/fingerprints.jsonl".format(index_dir)
         count = 0
-        
+
         with gzip.open(filepath, 'rt') as f_in, open(fp_file, 'a') as f_out:
             for line in f_in:
                 if not line.strip():
@@ -277,13 +277,13 @@ let
                         }
                     }) + '\n')
                     count += 1
-                    
+
                     if count % 50000 == 0:
                         print("    {:,} records...".format(count), end="\r", flush=True)
                 except Exception as e:
                     print("\n    Error: {}".format(e))
                     continue
-        
+
         print("    {:,} records total".format(count))
         return count
 
@@ -295,7 +295,7 @@ let
 
     total_days = (end_date - start_date).days + 1
     day_num = 0
-    
+
     total_tracks = 0
     total_mbids = 0
     total_fps = 0
@@ -304,26 +304,26 @@ let
         day_num += 1
         date_str = current_date.strftime("%Y-%m-%d")
         print("\n[{}/{}] Processing {}".format(day_num, total_days, date_str))
-        
+
         track_file = data_dir / "{}-track-update.jsonl.gz".format(date_str)
         if track_file.exists():
             total_tracks += bulk_import_tracks(track_file)
-        
+
         mbid_file = data_dir / "{}-track_mbid-update.jsonl.gz".format(date_str)
         if mbid_file.exists():
             total_mbids += bulk_import_track_mbids(mbid_file)
-        
+
         fp_file = data_dir / "{}-fingerprint-update.jsonl.gz".format(date_str)
         if fp_file.exists():
             total_fps += bulk_import_fingerprints(fp_file, index_dir)
-        
+
         current_date += timedelta(days=1)
 
     print("\nRestoring constraints...")
     cur.execute("SET session_replication_role = 'origin'")
     cur.execute("ANALYZE")
     conn.commit()
-    
+
     cur.close()
     conn.close()
 
@@ -344,48 +344,49 @@ let
     aria2c = "${pkgs.aria2}/bin/aria2c";
   in pkgs.writeShellScript "acoustid-import" ''
     set -euo pipefail
-    
+
     START_DATE=''${ACOUSTID_START_DATE:-"2011-08-01"}
     END_DATE=''${ACOUSTID_END_DATE:-$(date +%Y-%m-%d)}
     DATA_DIR=/mnt/deepstor/acoustid-data
     INDEX_DIR=/mnt/deepstor/acoustid-index
-    
+
     echo "AcoustID Database Import"
     echo "========================"
     echo "Date range: $START_DATE to $END_DATE"
     echo
-    
+
     mkdir -p "$DATA_DIR" "$INDEX_DIR"
-    
+
     echo "Generating download URLs..."
     ${python} ${acoustidUrlGenerator} "$START_DATE" "$END_DATE" > "$DATA_DIR/urls.txt"
     URL_COUNT=$(wc -l < "$DATA_DIR/urls.txt")
     echo "Generated $URL_COUNT URLs"
     echo
-    
+
     echo "Downloading dumps with aria2c..."
     ${aria2c} \
       --input-file="$DATA_DIR/urls.txt" \
       --dir="$DATA_DIR" \
-      --max-connection-per-server=16 \
-      --max-concurrent-downloads=20 \
-      --min-split-size=1M \
+      --max-connection-per-server=2 \
+      --max-concurrent-downloads=4 \
+      --min-split-size=10M \
+      --max-overall-download-limit=50M \
       --continue=true \
       --auto-file-renaming=false \
       --allow-overwrite=false \
       --summary-interval=10
-    
+
     echo
     echo "Importing data into PostgreSQL..."
     ${python} ${acoustidImportPython} "$DATA_DIR" "$INDEX_DIR" "$START_DATE" "$END_DATE"
-    
+
     echo
     echo "Database statistics:"
     ${psql} -d acoustid -c "
       SELECT 'Tracks' as type, COUNT(*)::text as count FROM track
       UNION ALL SELECT 'Track→MBID mappings', COUNT(*)::text FROM track_mbid;
     "
-    
+
     if [ -f "$INDEX_DIR/fingerprints.jsonl" ]; then
       echo
       echo "Loading fingerprints into acoustid-index..."
@@ -396,7 +397,7 @@ let
       echo "✓ Fingerprint index updated"
       rm "$INDEX_DIR/fingerprints.jsonl"
     fi
-    
+
     echo
     echo "✓ AcoustID database ready!"
   '';
@@ -465,10 +466,10 @@ in
       ExecStart = let psql = "${config.services.postgresql.package}/bin/psql"; in
         pkgs.writeShellScript "musicbrainz-db-setup" ''
           set -euo pipefail
-          
+
           ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS cube;"
           ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS earthdistance;"
-          
+
           DB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path} | sed "s/'/'''/g")
           ${psql} -d musicbrainz <<EOF
 ALTER USER musicbrainz PASSWORD '$DB_PASSWORD';
@@ -481,7 +482,7 @@ EOF
   # MusicBrainz Docker setup
   # ---------------------------------------------------------------------------
   virtualisation.docker.enable = true;
-  
+
   systemd.services.musicbrainz-docker-setup = {
     description = "Setup MusicBrainz Docker repository";
     wantedBy = [ "multi-user.target" ];
@@ -495,10 +496,10 @@ EOF
         if [ ! -d "${musicbrainzDockerRoot}/.git" ]; then
           ${pkgs.git}/bin/git clone https://github.com/metabrainz/musicbrainz-docker.git ${musicbrainzDockerRoot}
           cd ${musicbrainzDockerRoot}
-          
+
           # Get host IP for Docker containers
           HOST_IP=$(${pkgs.iproute2}/bin/ip -4 addr show docker0 2>/dev/null | ${pkgs.gnugrep}/bin/grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
-          
+
           ${pkgs.coreutils}/bin/cat > .env <<EOF
 # PostgreSQL on host (not Docker)
 MUSICBRAINZ_POSTGRES_SERVER=$HOST_IP
@@ -507,10 +508,10 @@ MUSICBRAINZ_POSTGRES_READONLY_SERVER=$HOST_IP
 # Database-only mirror mode
 COMPOSE_FILE=docker-compose.yml:docker-compose.alt.db-only-mirror.yml
 EOF
-          
+
           mkdir -p local/secrets
           cp ${config.sops.secrets."musicbrainz/replication-token".path} local/secrets/metabrainz_access_token
-          
+
           ${pkgs.docker}/bin/docker compose build
         fi
       '';
@@ -522,7 +523,7 @@ EOF
     description = "MusicBrainz Docker replication sync";
     after = [ "postgresql.service" "musicbrainz-db-setup.service" "docker.service" "musicbrainz-docker-setup.service" ];
     requires = [ "postgresql.service" "docker.service" "musicbrainz-docker-setup.service" ];
-    
+
     serviceConfig = {
       Type = "oneshot";
       WorkingDirectory = musicbrainzDockerRoot;
@@ -558,7 +559,7 @@ EOF
       ExecStart = let psql = "${config.services.postgresql.package}/bin/psql"; in
         pkgs.writeShellScript "acoustid-db-setup" ''
           set -euo pipefail
-          
+
           ${psql} -d acoustid << 'EOF'
 CREATE TABLE IF NOT EXISTS track (
     id INTEGER PRIMARY KEY,
@@ -576,7 +577,7 @@ CREATE INDEX IF NOT EXISTS track_mbid_track_idx ON track_mbid(track_id);
 CREATE INDEX IF NOT EXISTS track_mbid_mbid_idx ON track_mbid(mbid);
 
 CREATE OR REPLACE VIEW track_mbid_summary AS
-SELECT 
+SELECT
     track_id,
     mbid,
     submission_count
@@ -588,7 +589,7 @@ WHERE NOT EXISTS (
 )
 ORDER BY submission_count DESC;
 EOF
-          
+
           echo "✓ AcoustID schema created"
         '';
     };
@@ -601,7 +602,7 @@ EOF
     description = "AcoustID fingerprint search engine";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
-    
+
     serviceConfig = {
       Type = "simple";
       User = "acoustid";
@@ -626,7 +627,7 @@ EOF
     description = "AcoustID initial data import";
     after = [ "postgresql.service" "acoustid-db-setup.service" "acoustid-index.service" ];
     requires = [ "postgresql.service" "acoustid-db-setup.service" "acoustid-index.service" ];
-    
+
     serviceConfig = {
       Type = "oneshot";
       User = "postgres";
@@ -641,7 +642,7 @@ EOF
     description = "AcoustID daily sync";
     after = [ "postgresql.service" "acoustid-index.service" ];
     requires = [ "postgresql.service" "acoustid-index.service" ];
-    
+
     serviceConfig = {
       Type = "oneshot";
       User = "postgres";
@@ -681,12 +682,12 @@ EOF
   # ---------------------------------------------------------------------------
   # Firewall & packages
   # ---------------------------------------------------------------------------
-  networking.firewall.allowedTCPPorts = [ 
+  networking.firewall.allowedTCPPorts = [
     5432  # PostgreSQL
     8081  # acoustid-index
   ];
-  
-  environment.systemPackages = [ 
+
+  environment.systemPackages = [
     acoustid-index
     pkgs.chromaprint
     pkgs.aria2
