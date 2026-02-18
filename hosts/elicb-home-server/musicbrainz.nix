@@ -2,38 +2,27 @@
 # 
 # COMPONENTS:
 #   - MusicBrainz: PostgreSQL database with music metadata (~45 GB)
+#     Managed via official MusicBrainz Docker (database-only mirror mode)
 #   - AcoustID: Audio fingerprint → MusicBrainz ID matching (~35 GB)
 #   - acoustid-index: Fast fingerprint search engine (HTTP API on :8081)
 #
 # INITIAL SETUP:
 #   1. MusicBrainz database:
-#      $ sudo musicbrainz-init
-#      $ journalctl -u musicbrainz-init -f  # Monitor (2-6 hours)
+#      $ cd /opt/musicbrainz-docker && docker compose run --rm musicbrainz createdb.sh -fetch
+#      Monitor: docker compose logs -f
 #
 #   2. AcoustID fingerprint database:
-#      $ sudo acoustid-init
-#      $ journalctl -u acoustid-init -f  # Monitor progress (6-12 hours)
+#      $ sudo systemctl start acoustid-init
+#      $ journalctl -u acoustid-init -f
 #
-#      Note: Downloads complete history from 2011-08-01 (~200 GB, all fingerprints).
-#            For testing: ACOUSTID_START_DATE=2024-01-01 sudo acoustid-init
-#
-# PERFORMANCE OPTIMIZATIONS:
-#   - session_replication_role='replica': Disables ALL constraints/triggers
-#     during import for massive speedup (standard PostgreSQL bulk load)
-#     Set at DATABASE level so all mbslave connections inherit the setting
-#   - aria2c: 16 connections/file, 20 parallel downloads
-#   - PostgreSQL COPY: ~10x faster than individual INSERTs
-#   - Constraints/triggers automatically restored after import
-#   - Full backfill: ~6-12 hours (network/CPU dependent)
-#
-# DATA QUALITY:
-#   - MusicBrainz dumps contain data quality issues (empty strings, etc.)
-#   - session_replication_role='replica' bypasses ALL constraints during import
-#   - Data imported as-is; constraints remain disabled during bulk load
-#   - ANALYZE run after import to rebuild query optimizer statistics
+# ARCHITECTURE:
+#   - PostgreSQL runs natively on NixOS (not in Docker)
+#   - MusicBrainz Docker tools connect to host PostgreSQL via docker0 IP
+#   - Database-only mirror mode (no web server overhead)
+#   - Official MusicBrainz tooling ensures schema compatibility
 #
 # ONGOING MAINTENANCE:
-#   - MusicBrainz sync: hourly (musicbrainz-sync.timer)
+#   - MusicBrainz sync: hourly (musicbrainz-docker-replication.timer)
 #   - AcoustID sync: daily (acoustid-sync.timer)
 #
 # ACOUSTID LOOKUP API:
@@ -42,123 +31,8 @@
 { config, pkgs, lib, ... }:
 
 let
-  # ---------------------------------------------------------------------------
-  # Wrapper scripts for easy initialization
-  # ---------------------------------------------------------------------------
-  musicbrainzInitWrapper = pkgs.writeShellScriptBin "musicbrainz-init" ''
-    set -e
-    
-    # Require root/sudo
-    if [ "$EUID" -ne 0 ]; then
-      echo "This command must be run with sudo"
-      echo "Usage: sudo musicbrainz-init"
-      exit 1
-    fi
-    
-    echo "================================================"
-    echo "MusicBrainz Database Import"
-    echo "================================================"
-    echo ""
-    
-    # Check if database already populated (run as postgres user)
-    echo "Checking database status..."
-    TABLE_COUNT=$(sudo -u postgres ${config.services.postgresql.package}/bin/psql -d musicbrainz -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'musicbrainz';" 2>/dev/null || echo 0)
-    
-    if [ "$TABLE_COUNT" -gt 100 ]; then
-      echo ""
-      echo "❌ Database already populated ($TABLE_COUNT tables found)"
-      echo ""
-      echo "To wipe and re-import, run:"
-      echo "  sudo -u postgres psql -c 'DROP DATABASE musicbrainz;'"
-      echo "  sudo -u postgres psql -c 'CREATE DATABASE musicbrainz OWNER musicbrainz;'"
-      echo "  sudo systemctl restart musicbrainz-db-setup"
-      echo "  sudo musicbrainz-init"
-      echo ""
-      exit 1
-    fi
-    
-    echo "✓ Database is empty, ready for import"
-    echo ""
-    echo "Starting import (duration: 2-6 hours)..."
-    
-    systemctl start musicbrainz-init.service --no-block
-    
-    echo ""
-    echo "✓ Import started in background"
-    echo ""
-    echo "Monitor progress:"
-    echo "  journalctl -u musicbrainz-init -f"
-    echo ""
-    echo "Check status:"
-    echo "  systemctl status musicbrainz-init"
-  '';
-
-  acoustidInitWrapper = pkgs.writeShellScriptBin "acoustid-init" ''
-    set -e
-    
-    # Require root/sudo
-    if [ "$EUID" -ne 0 ]; then
-      echo "This command must be run with sudo"
-      echo "Usage: sudo acoustid-init"
-      exit 1
-    fi
-    
-    # Pass through ACOUSTID_START_DATE environment variable if set
-    START_DATE=''${ACOUSTID_START_DATE:-2011-08-01}
-    
-    echo "================================================"
-    echo "AcoustID Database Import"
-    echo "================================================"
-    echo ""
-    
-    if [ "$START_DATE" != "2011-08-01" ]; then
-      echo "⚠️  Using custom start date: $START_DATE"
-      echo "   (default is 2011-08-01 for complete history)"
-      echo ""
-    fi
-    
-    # Check if database already has data (run as postgres user)
-    echo "Checking database status..."
-    TRACK_COUNT=$(sudo -u postgres ${config.services.postgresql.package}/bin/psql -d acoustid -tAc "SELECT COUNT(*) FROM track;" 2>/dev/null || echo 0)
-    
-    if [ "$TRACK_COUNT" -gt 0 ]; then
-      echo ""
-      echo "⚠️  Database already has $TRACK_COUNT tracks"
-      echo ""
-      echo "This will APPEND new data (incremental update)."
-      echo ""
-      echo "To wipe and start fresh:"
-      echo "  sudo -u postgres psql -c 'DROP DATABASE acoustid;'"
-      echo "  sudo -u postgres psql -c 'CREATE DATABASE acoustid;'"
-      echo "  sudo systemctl restart acoustid-db-setup"
-      echo "  sudo acoustid-init"
-      echo ""
-      read -p "Continue with incremental update? (y/N) " -n 1 -r
-      echo ""
-      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Cancelled."
-        exit 0
-      fi
-    else
-      echo "✓ Database is empty, ready for import"
-    fi
-    
-    echo ""
-    echo "Starting import (duration: 6-12 hours)..."
-    echo "Date range: $START_DATE to $(date +%Y-%m-%d)"
-    
-    systemctl start acoustid-init.service --no-block
-    
-    echo ""
-    echo "✓ Import started in background"
-    echo ""
-    echo "Monitor progress:"
-    echo "  journalctl -u acoustid-init -f"
-    echo ""
-    echo "Check status:"
-    echo "  systemctl status acoustid-init"
-  '';
-
+  musicbrainzDockerRoot = "/opt/musicbrainz-docker";
+  
   # ---------------------------------------------------------------------------
   # acoustid-index: Fast fingerprint search engine (Zig)
   # ---------------------------------------------------------------------------
@@ -173,7 +47,6 @@ let
       hash = "sha256-hqWsbQEEs02p3UOuR5zptKE60GxSPvVoysrrtXx7nyc=";
     };
     
-    # Zig dependencies (following nixpkgs zon2nix pattern)
     deps = pkgs.linkFarm "zig-packages" [
       {
         name = "httpz-0.0.0-PNVzrJSuBgDFvO7mtd2qDzaq8_hXIu1BqFuL1jwAV8Ac";
@@ -258,180 +131,6 @@ let
   });
 
   # ---------------------------------------------------------------------------
-  # MusicBrainz replication tool
-  # ---------------------------------------------------------------------------
-  # Override prometheus-client to use 0.20.x (required by mbslave 29.1.0)
-  prometheus-client_0_20 = pkgs.python3Packages.prometheus-client.overridePythonAttrs (old: rec {
-    version = "0.20.0";
-    src = pkgs.fetchPypi {
-      pname = "prometheus_client";
-      inherit version;
-      hash = "sha256-KHYp0AsUejLcsr4LnfkF2lmbLYL4A3cIPshGMwmku4k=";
-    };
-  });
-
-  mbslave = pkgs.python3Packages.buildPythonApplication rec {
-    pname = "mbslave";
-    version = "29.1.0";
-    src = pkgs.fetchFromGitHub {
-      owner = "acoustid";
-      repo = "mbslave";
-      rev = "v${version}";
-      hash = "sha256-XCj8Jt6uH3/cZDTxQYgkpiV4bc1Y+i/UccfNZVMZbAI=";
-    };
-    pyproject = true;
-    build-system = [ pkgs.python3Packages.poetry-core ];
-    dependencies = with pkgs.python3Packages; [
-      psycopg2
-      six
-      prometheus-client_0_20
-    ];
-  };
-
-  mbslaveConfig = pkgs.writeText "mbslave.conf" ''
-    [database]
-    name=musicbrainz
-    user=postgres
-
-    [musicbrainz]
-    base_url=https://metabrainz.org/api/musicbrainz/
-
-    [tables]
-    ignore=
-
-    [schemas]
-    musicbrainz=musicbrainz
-    statistics=statistics
-    cover_art_archive=cover_art_archive
-    event_art_archive=event_art_archive
-    wikidocs=wikidocs
-    documentation=documentation
-    dbmirror2=dbmirror2
-  '';
-
-  musicbrainzInitScript = let
-    psql = "${config.services.postgresql.package}/bin/psql";
-    mbslaveBin = "${mbslave}/bin/mbslave";
-    curl = "${pkgs.curl}/bin/curl";
-    sha256sum = "${pkgs.coreutils}/bin/sha256sum";
-  in pkgs.writeShellScript "musicbrainz-init" ''
-    set -euo pipefail
-    
-    export MBSLAVE_CONFIG=${mbslaveConfig}
-    export MBSLAVE_MUSICBRAINZ_TOKEN=$(cat ${config.sops.secrets."musicbrainz/replication-token".path})
-    
-    DUMP_DIR=/mnt/deepstor/musicbrainz-dumps
-    BASE_URL=https://data.metabrainz.org/pub/musicbrainz/data/fullexport
-    
-    echo "MusicBrainz Initial Database Setup"
-    echo "==================================="
-    echo
-    
-    # Create dump directory
-    mkdir -p "$DUMP_DIR"
-    cd "$DUMP_DIR"
-    
-    # Get latest version
-    echo "Fetching latest dump version..."
-    LATEST=$(${curl} -sf "$BASE_URL/LATEST" | tr -d '\n')
-    echo "Latest: $LATEST"
-    echo
-    
-    DUMP_URL="$BASE_URL/$LATEST"
-    
-    # Required dumps
-    declare -a DUMPS=(
-      "mbdump.tar.bz2"
-      "mbdump-derived.tar.bz2"
-      "mbdump-editor.tar.bz2"
-      "mbdump-cover-art-archive.tar.bz2"
-    )
-    
-    # Download with resume support
-    echo "Downloading dumps (~6.7 GB)..."
-    for dump in "''${DUMPS[@]}"; do
-      if [ -f "$dump" ]; then
-        echo "  $dump (resuming existing)"
-      else
-        echo "  $dump"
-      fi
-      ${curl} -# -L -C - -o "$dump" "$DUMP_URL/$dump"
-    done
-    
-    # Download and verify checksums
-    echo
-    echo "Verifying downloads..."
-    ${curl} -sf -L -o SHA256SUMS "$DUMP_URL/SHA256SUMS"
-    
-    VERIFY_OUTPUT=$(${sha256sum} -c SHA256SUMS 2>&1 | grep -E "$(echo "''${DUMPS[@]}" | tr ' ' '|')" || true)
-    if echo "$VERIFY_OUTPUT" | grep -q "FAILED"; then
-      echo "✗ Checksum verification failed"
-      echo "$VERIFY_OUTPUT"
-      exit 1
-    fi
-    echo "✓ Checksums verified"
-    echo
-    
-    # Create schema
-    echo "Creating database schema..."
-    ${mbslaveBin} init --empty
-    echo "✓ Schema created"
-    echo
-    
-    # Enable replica mode at DATABASE level (affects ALL connections)
-    echo "Enabling fast import mode (disables constraints during import)..."
-    ${psql} -d musicbrainz -c "ALTER DATABASE musicbrainz SET session_replication_role = 'replica';"
-    echo "✓ Constraints/triggers disabled for all connections"
-    echo
-    
-    # Import data
-    echo "Importing data (2-6 hours)..."
-    echo "NOTE: All constraints/triggers disabled via session_replication_role"
-    echo
-    
-    echo "[1/4] Core data (1-4 hours)..."
-    ${mbslaveBin} import mbdump.tar.bz2
-    
-    echo "[2/4] Editor data..."
-    ${mbslaveBin} import mbdump-editor.tar.bz2
-    
-    echo "[3/4] Derived data..."
-    ${mbslaveBin} import mbdump-derived.tar.bz2
-    
-    echo "[4/4] Cover art..."
-    ${mbslaveBin} import mbdump-cover-art-archive.tar.bz2
-    
-    echo
-    echo "✓ Data import complete"
-    echo
-    
-    # Restore normal mode at DATABASE level
-    echo "Restoring constraints and rebuilding statistics..."
-    ${psql} -d musicbrainz -c "ALTER DATABASE musicbrainz RESET session_replication_role;"
-    ${psql} -d musicbrainz -c "ANALYZE;"
-    echo "✓ Constraints restored and statistics rebuilt"
-    echo
-    
-    # Show statistics
-    ${psql} -d musicbrainz -c "
-      SELECT pg_size_pretty(pg_database_size('musicbrainz')) as \"Database Size\";
-    "
-    ${psql} -d musicbrainz -c "
-      SELECT 'Artists' as \"Type\", COUNT(*)::text as \"Count\" FROM musicbrainz.artist
-      UNION ALL SELECT 'Releases', COUNT(*)::text FROM musicbrainz.release
-      UNION ALL SELECT 'Recordings', COUNT(*)::text FROM musicbrainz.recording;
-    "
-    
-    # Cleanup
-    echo
-    echo "Cleaning up dumps..."
-    rm -f mbdump*.tar.bz2 SHA256SUMS
-    echo "✓ Freed 6.7 GB"
-    echo
-    echo "Hourly sync (musicbrainz-sync.timer) will keep database updated."
-  '';
-
-  # ---------------------------------------------------------------------------
   # AcoustID URL generator for aria2c bulk download
   # ---------------------------------------------------------------------------
   acoustidUrlGenerator = pkgs.writeText "acoustid-urls.py" ''
@@ -447,7 +146,6 @@ let
         year, month = current.strftime("%Y"), current.strftime("%Y-%m")
         date_str = current.strftime("%Y-%m-%d")
         
-        # Only essential files (skip track_fingerprint, track_meta, meta, track_puid)
         for file_type in ["fingerprint", "track", "track_mbid"]:
             url = "{}/{}/{}/{}-{}-update.jsonl.gz".format(
                 base_url, year, month, date_str, file_type
@@ -458,7 +156,7 @@ let
   '';
 
   # ---------------------------------------------------------------------------
-  # AcoustID data import Python script (optimized with COPY)
+  # AcoustID data import Python script
   # ---------------------------------------------------------------------------
   acoustidImportPython = pkgs.writeText "acoustid-import.py" ''
     import sys, gzip, json, psycopg2
@@ -469,14 +167,12 @@ let
     conn = psycopg2.connect("dbname=acoustid user=postgres")
     cur = conn.cursor()
 
-    # Optimize for bulk import
     conn.set_session(autocommit=False)
     cur.execute("SET synchronous_commit = OFF")
     cur.execute("SET maintenance_work_mem = '2GB'")
-    cur.execute("SET session_replication_role = 'replica'")  # Disable constraints/triggers
+    cur.execute("SET session_replication_role = 'replica'")
 
     def bulk_import_tracks(filepath):
-        """Bulk import tracks using COPY"""
         print("  Importing tracks...")
         buffer = StringIO()
         count = 0
@@ -487,10 +183,7 @@ let
                     continue
                 try:
                     data = json.loads(line)
-                    # Format: id\tgid
-                    gid = data.get('gid')
-                    if not gid:
-                        gid = ""
+                    gid = data.get('gid') or ""
                     buffer.write("{}\\t{}\\n".format(data['id'], gid))
                     count += 1
                     
@@ -507,7 +200,6 @@ let
                     print("\n    Error: {}".format(e))
                     continue
         
-        # Final batch
         if buffer.tell() > 0:
             buffer.seek(0)
             cur.copy_expert(
@@ -520,7 +212,6 @@ let
         return count
 
     def bulk_import_track_mbids(filepath):
-        """Bulk import track→MBID mappings using COPY"""
         print("  Importing track→MBID mappings...")
         buffer = StringIO()
         count = 0
@@ -532,9 +223,8 @@ let
                 try:
                     data = json.loads(line)
                     if data.get('disabled'):
-                        continue  # Skip disabled
+                        continue
                     
-                    # Format: id\ttrack_id\tmbid\tsubmission_count
                     buffer.write("{}\\t{}\\t{}\\t{}\\n".format(
                         data['id'],
                         data['track_id'],
@@ -557,7 +247,6 @@ let
                     print("\n    Error: {}".format(e))
                     continue
         
-        # Final batch
         if buffer.tell() > 0:
             buffer.seek(0)
             cur.copy_expert(
@@ -571,7 +260,6 @@ let
         return count
 
     def bulk_import_fingerprints(filepath, index_dir):
-        """Stream fingerprints to acoustid-index JSONL"""
         print("  Processing fingerprints...")
         fp_file = "{}/fingerprints.jsonl".format(index_dir)
         count = 0
@@ -599,7 +287,6 @@ let
         print("    {:,} records total".format(count))
         return count
 
-    # Main import loop
     data_dir = Path(sys.argv[1])
     index_dir = sys.argv[2]
     start_date = datetime.strptime(sys.argv[3], "%Y-%m-%d")
@@ -618,24 +305,20 @@ let
         date_str = current_date.strftime("%Y-%m-%d")
         print("\n[{}/{}] Processing {}".format(day_num, total_days, date_str))
         
-        # Import tracks
         track_file = data_dir / "{}-track-update.jsonl.gz".format(date_str)
         if track_file.exists():
             total_tracks += bulk_import_tracks(track_file)
         
-        # Import track→MBID mappings
         mbid_file = data_dir / "{}-track_mbid-update.jsonl.gz".format(date_str)
         if mbid_file.exists():
             total_mbids += bulk_import_track_mbids(mbid_file)
         
-        # Import fingerprints
         fp_file = data_dir / "{}-fingerprint-update.jsonl.gz".format(date_str)
         if fp_file.exists():
             total_fps += bulk_import_fingerprints(fp_file, index_dir)
         
         current_date += timedelta(days=1)
 
-    # Restore normal mode and cleanup
     print("\nRestoring constraints...")
     cur.execute("SET session_replication_role = 'origin'")
     cur.execute("ANALYZE")
@@ -653,7 +336,7 @@ let
   '';
 
   # ---------------------------------------------------------------------------
-  # AcoustID data import shell wrapper
+  # AcoustID import script
   # ---------------------------------------------------------------------------
   acoustidImportScript = let
     psql = "${config.services.postgresql.package}/bin/psql";
@@ -662,9 +345,6 @@ let
   in pkgs.writeShellScript "acoustid-import" ''
     set -euo pipefail
     
-    # Configuration
-    # Default: complete history from 2011-08-01 (first available data)
-    # For testing: ACOUSTID_START_DATE=2024-01-01 sudo systemctl start acoustid-init --no-block
     START_DATE=''${ACOUSTID_START_DATE:-"2011-08-01"}
     END_DATE=''${ACOUSTID_END_DATE:-$(date +%Y-%m-%d)}
     DATA_DIR=/mnt/deepstor/acoustid-data
@@ -673,23 +353,17 @@ let
     echo "AcoustID Database Import"
     echo "========================"
     echo "Date range: $START_DATE to $END_DATE"
-    echo "Data dir: $DATA_DIR"
-    echo "Index dir: $INDEX_DIR"
     echo
     
-    # Create directories
     mkdir -p "$DATA_DIR" "$INDEX_DIR"
     
-    # Generate URL list
     echo "Generating download URLs..."
     ${python} ${acoustidUrlGenerator} "$START_DATE" "$END_DATE" > "$DATA_DIR/urls.txt"
     URL_COUNT=$(wc -l < "$DATA_DIR/urls.txt")
     echo "Generated $URL_COUNT URLs"
     echo
     
-    # Download with aria2c (parallel, resumable)
-    echo "Downloading dumps with aria2c (parallel)..."
-    echo "This may take 1-2 hours depending on bandwidth..."
+    echo "Downloading dumps with aria2c..."
     ${aria2c} \
       --input-file="$DATA_DIR/urls.txt" \
       --dir="$DATA_DIR" \
@@ -702,14 +376,9 @@ let
       --summary-interval=10
     
     echo
-    echo "✓ Download complete"
-    echo
-    
-    # Import data
     echo "Importing data into PostgreSQL..."
     ${python} ${acoustidImportPython} "$DATA_DIR" "$INDEX_DIR" "$START_DATE" "$END_DATE"
     
-    # Show statistics
     echo
     echo "Database statistics:"
     ${psql} -d acoustid -c "
@@ -717,7 +386,6 @@ let
       UNION ALL SELECT 'Track→MBID mappings', COUNT(*)::text FROM track_mbid;
     "
     
-    # Load fingerprints into acoustid-index
     if [ -f "$INDEX_DIR/fingerprints.jsonl" ]; then
       echo
       echo "Loading fingerprints into acoustid-index..."
@@ -731,12 +399,11 @@ let
     
     echo
     echo "✓ AcoustID database ready!"
-    echo "Daily updates will sync automatically via acoustid-sync.timer"
   '';
 in
 {
   # ---------------------------------------------------------------------------
-  # PostgreSQL - data on RAID array (shared by MusicBrainz + AcoustID)
+  # PostgreSQL - shared by MusicBrainz + AcoustID
   # ---------------------------------------------------------------------------
   services.postgresql = {
     enable = true;
@@ -744,8 +411,8 @@ in
     dataDir = "/mnt/md0/postgresql";
     enableTCPIP = true;
 
-    # Allow remote clients to connect
     authentication = lib.mkAfter ''
+      host musicbrainz musicbrainz 172.16.0.0/12 scram-sha-256
       host musicbrainz musicbrainz 0.0.0.0/0 scram-sha-256
       host acoustid acoustid 0.0.0.0/0 scram-sha-256
     '';
@@ -767,25 +434,24 @@ in
       effective_cache_size = "6GB";
       work_mem = "256MB";
       maintenance_work_mem = "512MB";
+      listen_addresses = "*";
     };
   };
 
-  # PostgreSQL must wait for RAID mount
   systemd.services.postgresql = {
     after = [ "mnt-md0.mount" ];
     requires = [ "mnt-md0.mount" ];
   };
 
-  # Ensure data directories exist with correct ownership
   systemd.tmpfiles.rules = [
     "d /mnt/md0/postgresql 0700 postgres postgres -"
     "d /mnt/deepstor/acoustid-index 0755 acoustid acoustid -"
     "d /mnt/deepstor/acoustid-data 0755 postgres postgres -"
-    "d /mnt/deepstor/musicbrainz-dumps 0755 postgres postgres -"
+    "d ${musicbrainzDockerRoot} 0755 root root -"
   ];
 
   # ---------------------------------------------------------------------------
-  # Database setup - extensions + remote access password
+  # MusicBrainz database setup
   # ---------------------------------------------------------------------------
   systemd.services.musicbrainz-db-setup = {
     description = "MusicBrainz PostgreSQL extensions and user setup";
@@ -800,11 +466,9 @@ in
         pkgs.writeShellScript "musicbrainz-db-setup" ''
           set -euo pipefail
           
-          # Create extensions
           ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS cube;"
           ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS earthdistance;"
           
-          # Set password securely (escape single quotes)
           DB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path} | sed "s/'/'''/g")
           ${psql} -d musicbrainz <<EOF
 ALTER USER musicbrainz PASSWORD '$DB_PASSWORD';
@@ -814,10 +478,76 @@ EOF
   };
 
   # ---------------------------------------------------------------------------
+  # MusicBrainz Docker setup
+  # ---------------------------------------------------------------------------
+  virtualisation.docker.enable = true;
+  
+  systemd.services.musicbrainz-docker-setup = {
+    description = "Setup MusicBrainz Docker repository";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" "docker.service" ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "mb-docker-setup" ''
+        set -e
+        if [ ! -d "${musicbrainzDockerRoot}/.git" ]; then
+          ${pkgs.git}/bin/git clone https://github.com/metabrainz/musicbrainz-docker.git ${musicbrainzDockerRoot}
+          cd ${musicbrainzDockerRoot}
+          
+          # Get host IP for Docker containers
+          HOST_IP=$(${pkgs.iproute2}/bin/ip -4 addr show docker0 2>/dev/null | ${pkgs.gnugrep}/bin/grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
+          
+          ${pkgs.coreutils}/bin/cat > .env <<EOF
+# PostgreSQL on host (not Docker)
+MUSICBRAINZ_POSTGRES_SERVER=$HOST_IP
+MUSICBRAINZ_POSTGRES_READONLY_SERVER=$HOST_IP
+
+# Database-only mirror mode
+COMPOSE_FILE=docker-compose.yml:docker-compose.alt.db-only-mirror.yml
+EOF
+          
+          mkdir -p local/secrets
+          cp ${config.sops.secrets."musicbrainz/replication-token".path} local/secrets/metabrainz_access_token
+          
+          ${pkgs.docker}/bin/docker compose build
+        fi
+      '';
+    };
+  };
+
+  # Hourly replication
+  systemd.services.musicbrainz-docker-replication = {
+    description = "MusicBrainz Docker replication sync";
+    after = [ "postgresql.service" "musicbrainz-db-setup.service" "docker.service" "musicbrainz-docker-setup.service" ];
+    requires = [ "postgresql.service" "docker.service" "musicbrainz-docker-setup.service" ];
+    
+    serviceConfig = {
+      Type = "oneshot";
+      WorkingDirectory = musicbrainzDockerRoot;
+      ExecStart = pkgs.writeShellScript "mb-docker-replication" ''
+        set -e
+        cd ${musicbrainzDockerRoot}
+        ${pkgs.docker}/bin/docker compose run --rm musicbrainz replication.sh
+      '';
+    };
+  };
+
+  systemd.timers.musicbrainz-docker-replication = {
+    description = "MusicBrainz hourly replication";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "hourly";
+      Persistent = true;
+    };
+  };
+
+  # ---------------------------------------------------------------------------
   # AcoustID database setup
   # ---------------------------------------------------------------------------
   systemd.services.acoustid-db-setup = {
-    description = "AcoustID PostgreSQL database schema setup";
+    description = "AcoustID PostgreSQL schema setup";
     after = [ "postgresql.service" "postgresql-setup.service" ];
     requires = [ "postgresql.service" "postgresql-setup.service" ];
     wantedBy = [ "multi-user.target" ];
@@ -829,7 +559,6 @@ EOF
         pkgs.writeShellScript "acoustid-db-setup" ''
           set -euo pipefail
           
-          # Create schema
           ${psql} -d acoustid << 'EOF'
 CREATE TABLE IF NOT EXISTS track (
     id INTEGER PRIMARY KEY,
@@ -846,7 +575,6 @@ CREATE TABLE IF NOT EXISTS track_mbid (
 CREATE INDEX IF NOT EXISTS track_mbid_track_idx ON track_mbid(track_id);
 CREATE INDEX IF NOT EXISTS track_mbid_mbid_idx ON track_mbid(mbid);
 
--- View for easy lookups
 CREATE OR REPLACE VIEW track_mbid_summary AS
 SELECT 
     track_id,
@@ -867,7 +595,7 @@ EOF
   };
 
   # ---------------------------------------------------------------------------
-  # acoustid-index service (fingerprint search engine)
+  # acoustid-index service
   # ---------------------------------------------------------------------------
   systemd.services.acoustid-index = {
     description = "AcoustID fingerprint search engine";
@@ -884,7 +612,6 @@ EOF
     };
   };
 
-  # Create acoustid user
   users.users.acoustid = {
     isSystemUser = true;
     group = "acoustid";
@@ -893,9 +620,7 @@ EOF
   users.groups.acoustid = {};
 
   # ---------------------------------------------------------------------------
-  # AcoustID initial data import
-  # Usage: sudo acoustid-init
-  # Note: For testing only, use ACOUSTID_START_DATE=2024-01-01 sudo acoustid-init
+  # AcoustID import services
   # ---------------------------------------------------------------------------
   systemd.services.acoustid-init = {
     description = "AcoustID initial data import";
@@ -912,11 +637,8 @@ EOF
     };
   };
 
-  # ---------------------------------------------------------------------------
-  # AcoustID daily sync
-  # ---------------------------------------------------------------------------
   systemd.services.acoustid-sync = {
-    description = "AcoustID daily data sync";
+    description = "AcoustID daily sync";
     after = [ "postgresql.service" "acoustid-index.service" ];
     requires = [ "postgresql.service" "acoustid-index.service" ];
     
@@ -941,66 +663,10 @@ EOF
   };
 
   # ---------------------------------------------------------------------------
-  # Initial database setup - download dumps + import
-  # Usage: sudo musicbrainz-init
-  # ---------------------------------------------------------------------------
-  systemd.services.musicbrainz-init = {
-    description = "MusicBrainz initial database setup (download + import)";
-    after = [ "postgresql.service" "musicbrainz-db-setup.service" ];
-    requires = [ "postgresql.service" "musicbrainz-db-setup.service" ];
-    
-    path = [ config.services.postgresql.package ];
-    
-    serviceConfig = {
-      Type = "oneshot";
-      User = "postgres";
-      StandardOutput = "journal";
-      StandardError = "journal";
-      TimeoutStartSec = "infinity";
-      ExecStart = musicbrainzInitScript;
-    };
-  };
-
-  # ---------------------------------------------------------------------------
-  # Replication sync - hourly via mbslave
-  # ---------------------------------------------------------------------------
-  systemd.services.musicbrainz-sync = {
-    description = "MusicBrainz database replication sync";
-    after = [ "postgresql.service" "musicbrainz-db-setup.service" ];
-    requires = [ "postgresql.service" ];
-    
-    path = [ config.services.postgresql.package ];
-    
-    serviceConfig = {
-      Type = "oneshot";
-      User = "postgres";
-      ExecStart = pkgs.writeShellScript "musicbrainz-sync" ''
-        export MBSLAVE_CONFIG=${mbslaveConfig}
-        export MBSLAVE_MUSICBRAINZ_TOKEN=$(cat ${config.sops.secrets."musicbrainz/replication-token".path})
-        exec ${mbslave}/bin/mbslave sync
-      '';
-    };
-  };
-
-  systemd.timers.musicbrainz-sync = {
-    description = "MusicBrainz hourly replication sync";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "hourly";
-      Persistent = true;
-    };
-  };
-
-  # ---------------------------------------------------------------------------
-  # mbslave config file for manual operations
-  # ---------------------------------------------------------------------------
-  environment.etc."mbslave.conf".source = mbslaveConfig;
-
-  # ---------------------------------------------------------------------------
   # Secrets
   # ---------------------------------------------------------------------------
   sops.secrets."musicbrainz/replication-token" = {
-    owner = "postgres";
+    owner = "root";
     mode = "0400";
   };
   sops.secrets."musicbrainz/db-password" = {
@@ -1016,16 +682,14 @@ EOF
   # Firewall & packages
   # ---------------------------------------------------------------------------
   networking.firewall.allowedTCPPorts = [ 
-    5432  # PostgreSQL (MusicBrainz + AcoustID)
-    8081  # acoustid-index HTTP API
+    5432  # PostgreSQL
+    8081  # acoustid-index
   ];
   
   environment.systemPackages = [ 
-    mbslave
     acoustid-index
-    pkgs.chromaprint        # fpcalc for generating fingerprints
-    pkgs.aria2              # Parallel downloads for AcoustID data
-    musicbrainzInitWrapper  # Wrapper: musicbrainz-init
-    acoustidInitWrapper     # Wrapper: acoustid-init
+    pkgs.chromaprint
+    pkgs.aria2
+    pkgs.docker-compose
   ];
 }
