@@ -45,7 +45,7 @@ let
   # ---------------------------------------------------------------------------
   # acoustid-index: Fast fingerprint search engine (Zig)
   # ---------------------------------------------------------------------------
-  acoustid-index = pkgs.stdenv.mkDerivation rec {
+  acoustid-index = pkgs.stdenv.mkDerivation (finalAttrs: {
     pname = "acoustid-index";
     version = "2025-10-27";
     
@@ -56,23 +56,89 @@ let
       hash = "sha256-hqWsbQEEs02p3UOuR5zptKE60GxSPvVoysrrtXx7nyc=";
     };
     
-    nativeBuildInputs = [ pkgs.zig_0_13 ];
+    # Zig dependencies (following nixpkgs zon2nix pattern)
+    deps = pkgs.linkFarm "zig-packages" [
+      {
+        name = "httpz-0.0.0-PNVzrJSuBgDFvO7mtd2qDzaq8_hXIu1BqFuL1jwAV8Ac";
+        path = pkgs.fetchFromGitHub {
+          owner = "karlseguin";
+          repo = "http.zig";
+          rev = "56258131ef4505543fef5484451867c13c5ff322";
+          hash = "sha256-e6tzbYDdYlgg1riBfblK899OFLFe4dNan5/B24tEjLk=";
+        };
+      }
+      {
+        name = "zul-0.0.0-1oDot0BCBwA9cUo5OOrPs5NGmvoM7sk1ztfbdfL7mh4P";
+        path = pkgs.fetchFromGitHub {
+          owner = "karlseguin";
+          repo = "zul";
+          rev = "d9142c73aedc5698beba58b3fbf2bcfe69864778";
+          hash = "sha256-kQ1nOdSw0sNAOSMYgEBgNLE4XFGe4h9hGWOYMFKrzqA=";
+        };
+      }
+      {
+        name = "122061f30077ef518dd435d397598ab3c45daa3d2c25e6b45383fb94d0bd2c3af1af";
+        path = pkgs.fetchFromGitHub {
+          owner = "karlseguin";
+          repo = "metrics.zig";
+          rev = "cf2797bcb3aea7e5cdaf4de39c5550c70796e7b1";
+          hash = "sha256-9wb9pU3jTXfZYaQzPuW0IrsftJTyRCJfG9oks6RpKy4=";
+        };
+      }
+      {
+        name = "msgpack-0.3.0-ZOu9PO3MAQDvMwnQWWG6_tskPegFXF7gV9OA7EyMwEai";
+        path = pkgs.fetchFromGitHub {
+          owner = "lalinsky";
+          repo = "msgpack.zig";
+          rev = "094f0b1a6fcf3ae4867d06dd9e6b69f40e8dd56e";
+          hash = "sha256-i6Vih7vvHuIj7egi6NvdxPEur8wWFpon7QV1PlAo7YY=";
+        };
+      }
+      {
+        name = "nats-0.0.0-JvIiUFIMBwCd5EjU1IAdOufjmn8-6MboloGoPSJfD_J9";
+        path = pkgs.fetchFromGitHub {
+          owner = "lalinsky";
+          repo = "nats.zig";
+          rev = "6937d6eeffcfbd52703557f5b12e2a7f2c5cf65e";
+          hash = "sha256-7cibpPWEskGxokRt/WBCEJynlTLgazac8QW309VrLwY=";
+        };
+      }
+      {
+        name = "websocket-0.1.0-ZPISdXNIAwCXG7oHBj4zc1CfmZcDeyR6hfTEOo8_YI4r";
+        path = pkgs.fetchFromGitHub {
+          owner = "karlseguin";
+          repo = "websocket.zig";
+          rev = "7c3f1149bffcde1dec98dea88a442e2b580d750a";
+          hash = "sha256-qyfeyR3Yp5i1YROqaOp4QP8U0rYCXgdeeUKbbXQJMU4=";
+        };
+      }
+      {
+        name = "1220971bba07063e3373509f9997037b247a85f4c43a8f3f608e2b25d241fb72dd6d";
+        path = pkgs.fetchFromGitHub {
+          owner = "karlseguin";
+          repo = "websocket.zig";
+          rev = "7c3f1149bffcde1dec98dea88a442e2b580d750a";
+          hash = "sha256-qyfeyR3Yp5i1YROqaOp4QP8U0rYCXgdeeUKbbXQJMU4=";
+        };
+      }
+    ];
     
-    buildPhase = ''
-      zig build -Doptimize=ReleaseFast
-    '';
+    nativeBuildInputs = [ pkgs.zig_0_14 ];
     
-    installPhase = ''
-      mkdir -p $out/bin
-      cp zig-out/bin/acoustid-index $out/bin/
-    '';
+    zigBuildFlags = [
+      "-Doptimize=ReleaseFast"
+      "--system"
+      "${finalAttrs.deps}"
+    ];
     
     meta = {
       description = "AcoustID fingerprint search engine";
       homepage = "https://github.com/acoustid/acoustid-index";
       license = pkgs.lib.licenses.gpl3;
+      platforms = pkgs.lib.platforms.linux;
+      mainProgram = "acoustid-index";
     };
-  };
+  });
 
   # ---------------------------------------------------------------------------
   # MusicBrainz replication tool
@@ -614,6 +680,7 @@ in
     "d /mnt/md0/postgresql 0700 postgres postgres -"
     "d /mnt/deepstor/acoustid-index 0755 acoustid acoustid -"
     "d /mnt/deepstor/acoustid-data 0755 postgres postgres -"
+    "d /mnt/deepstor/musicbrainz-dumps 0755 postgres postgres -"
   ];
 
   # ---------------------------------------------------------------------------
