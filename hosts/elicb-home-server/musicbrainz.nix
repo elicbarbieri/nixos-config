@@ -7,8 +7,9 @@
 #   - acoustid-index: Fast fingerprint search engine (HTTP API on :8081)
 #
 # INITIAL SETUP:
-#   1. MusicBrainz database:
+#   1. Deploy config, then initialize MusicBrainz database:
 #      $ cd /opt/musicbrainz-docker && docker compose run --rm musicbrainz createdb.sh -fetch
+#      This loads into host PostgreSQL (not Docker) via docker-compose.host-db.yml override.
 #      Monitor: docker compose logs -f
 #
 #   2. AcoustID fingerprint database:
@@ -493,25 +494,39 @@ EOF
       RemainAfterExit = true;
       ExecStart = pkgs.writeShellScript "mb-docker-setup" ''
         set -e
+        NEEDS_BUILD=false
         if [ ! -d "${musicbrainzDockerRoot}/.git" ]; then
           ${pkgs.git}/bin/git clone https://github.com/metabrainz/musicbrainz-docker.git ${musicbrainzDockerRoot}
-          cd ${musicbrainzDockerRoot}
+          NEEDS_BUILD=true
+        fi
 
-          # Get host IP for Docker containers
-          HOST_IP=$(${pkgs.iproute2}/bin/ip -4 addr show docker0 2>/dev/null | ${pkgs.gnugrep}/bin/grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
+        cd ${musicbrainzDockerRoot}
 
-          ${pkgs.coreutils}/bin/cat > .env <<EOF
-# PostgreSQL on host (not Docker)
-MUSICBRAINZ_POSTGRES_SERVER=$HOST_IP
-MUSICBRAINZ_POSTGRES_READONLY_SERVER=$HOST_IP
+        # Get host IP for Docker containers to reach host PostgreSQL
+        HOST_IP=$(${pkgs.iproute2}/bin/ip -4 addr show docker0 2>/dev/null | ${pkgs.gnugrep}/bin/grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
 
-# Database-only mirror mode
-COMPOSE_FILE=docker-compose.yml:docker-compose.alt.db-only-mirror.yml
+        # Read DB password from sops
+        DB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path})
+
+        # Compose override to route musicbrainz container to host PostgreSQL
+        ${pkgs.coreutils}/bin/cat > docker-compose.host-db.yml <<EOF
+services:
+  musicbrainz:
+    environment:
+      - MUSICBRAINZ_POSTGRES_SERVER=$HOST_IP
+      - MUSICBRAINZ_POSTGRES_READONLY_SERVER=$HOST_IP
+      - POSTGRES_PASSWORD=$DB_PASSWORD
 EOF
 
-          mkdir -p local/secrets
-          cp ${config.sops.secrets."musicbrainz/replication-token".path} local/secrets/metabrainz_access_token
+        ${pkgs.coreutils}/bin/cat > .env <<EOF
+# Database-only mirror mode with host PostgreSQL
+COMPOSE_FILE=docker-compose.yml:docker-compose.alt.db-only-mirror.yml:docker-compose.host-db.yml
+EOF
 
+        mkdir -p local/secrets
+        cp ${config.sops.secrets."musicbrainz/replication-token".path} local/secrets/metabrainz_access_token
+
+        if [ "$NEEDS_BUILD" = "true" ]; then
           ${pkgs.docker}/bin/docker compose build
         fi
       '';
