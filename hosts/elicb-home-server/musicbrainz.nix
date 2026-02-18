@@ -7,29 +7,29 @@
 #
 # INITIAL SETUP:
 #   1. MusicBrainz database:
-#      $ sudo systemctl start musicbrainz-init
+#      $ sudo musicbrainz-init
 #      $ journalctl -u musicbrainz-init -f  # Monitor (2-6 hours)
 #
 #   2. AcoustID fingerprint database:
-#      # Full backfill (2011-2026, ~200 GB download):
-#      $ ACOUSTID_START_DATE=2011-08-01 sudo systemctl start acoustid-init
-#      
-#      # Recent data only (faster, for testing):
-#      $ ACOUSTID_START_DATE=2024-01-01 sudo systemctl start acoustid-init
-#      
-#      $ journalctl -u acoustid-init -f  # Monitor progress
+#      $ sudo acoustid-init
+#      $ journalctl -u acoustid-init -f  # Monitor progress (6-12 hours)
+#
+#      Note: Downloads complete history from 2011-08-01 (~200 GB, all fingerprints).
+#            For testing: ACOUSTID_START_DATE=2024-01-01 sudo acoustid-init
 #
 # PERFORMANCE OPTIMIZATIONS:
 #   - session_replication_role='replica': Disables ALL constraints/triggers
 #     during import for massive speedup (standard PostgreSQL bulk load)
+#     Set at DATABASE level so all mbslave connections inherit the setting
 #   - aria2c: 16 connections/file, 20 parallel downloads
 #   - PostgreSQL COPY: ~10x faster than individual INSERTs
 #   - Constraints/triggers automatically restored after import
 #   - Full backfill: ~6-12 hours (network/CPU dependent)
 #
 # DATA QUALITY:
-#   - MusicBrainz dumps may contain minor data issues (empty strings, etc.)
-#   - session_replication_role bypasses constraints during import
+#   - MusicBrainz dumps contain data quality issues (empty strings, etc.)
+#   - session_replication_role='replica' bypasses ALL constraints during import
+#   - Data imported as-is; constraints remain disabled during bulk load
 #   - ANALYZE run after import to rebuild query optimizer statistics
 #
 # ONGOING MAINTENANCE:
@@ -42,6 +42,123 @@
 { config, pkgs, lib, ... }:
 
 let
+  # ---------------------------------------------------------------------------
+  # Wrapper scripts for easy initialization
+  # ---------------------------------------------------------------------------
+  musicbrainzInitWrapper = pkgs.writeShellScriptBin "musicbrainz-init" ''
+    set -e
+    
+    # Require root/sudo
+    if [ "$EUID" -ne 0 ]; then
+      echo "This command must be run with sudo"
+      echo "Usage: sudo musicbrainz-init"
+      exit 1
+    fi
+    
+    echo "================================================"
+    echo "MusicBrainz Database Import"
+    echo "================================================"
+    echo ""
+    
+    # Check if database already populated (run as postgres user)
+    echo "Checking database status..."
+    TABLE_COUNT=$(sudo -u postgres ${config.services.postgresql.package}/bin/psql -d musicbrainz -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'musicbrainz';" 2>/dev/null || echo 0)
+    
+    if [ "$TABLE_COUNT" -gt 100 ]; then
+      echo ""
+      echo "❌ Database already populated ($TABLE_COUNT tables found)"
+      echo ""
+      echo "To wipe and re-import, run:"
+      echo "  sudo -u postgres psql -c 'DROP DATABASE musicbrainz;'"
+      echo "  sudo -u postgres psql -c 'CREATE DATABASE musicbrainz OWNER musicbrainz;'"
+      echo "  sudo systemctl restart musicbrainz-db-setup"
+      echo "  sudo musicbrainz-init"
+      echo ""
+      exit 1
+    fi
+    
+    echo "✓ Database is empty, ready for import"
+    echo ""
+    echo "Starting import (duration: 2-6 hours)..."
+    
+    systemctl start musicbrainz-init.service --no-block
+    
+    echo ""
+    echo "✓ Import started in background"
+    echo ""
+    echo "Monitor progress:"
+    echo "  journalctl -u musicbrainz-init -f"
+    echo ""
+    echo "Check status:"
+    echo "  systemctl status musicbrainz-init"
+  '';
+
+  acoustidInitWrapper = pkgs.writeShellScriptBin "acoustid-init" ''
+    set -e
+    
+    # Require root/sudo
+    if [ "$EUID" -ne 0 ]; then
+      echo "This command must be run with sudo"
+      echo "Usage: sudo acoustid-init"
+      exit 1
+    fi
+    
+    # Pass through ACOUSTID_START_DATE environment variable if set
+    START_DATE=''${ACOUSTID_START_DATE:-2011-08-01}
+    
+    echo "================================================"
+    echo "AcoustID Database Import"
+    echo "================================================"
+    echo ""
+    
+    if [ "$START_DATE" != "2011-08-01" ]; then
+      echo "⚠️  Using custom start date: $START_DATE"
+      echo "   (default is 2011-08-01 for complete history)"
+      echo ""
+    fi
+    
+    # Check if database already has data (run as postgres user)
+    echo "Checking database status..."
+    TRACK_COUNT=$(sudo -u postgres ${config.services.postgresql.package}/bin/psql -d acoustid -tAc "SELECT COUNT(*) FROM track;" 2>/dev/null || echo 0)
+    
+    if [ "$TRACK_COUNT" -gt 0 ]; then
+      echo ""
+      echo "⚠️  Database already has $TRACK_COUNT tracks"
+      echo ""
+      echo "This will APPEND new data (incremental update)."
+      echo ""
+      echo "To wipe and start fresh:"
+      echo "  sudo -u postgres psql -c 'DROP DATABASE acoustid;'"
+      echo "  sudo -u postgres psql -c 'CREATE DATABASE acoustid;'"
+      echo "  sudo systemctl restart acoustid-db-setup"
+      echo "  sudo acoustid-init"
+      echo ""
+      read -p "Continue with incremental update? (y/N) " -n 1 -r
+      echo ""
+      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Cancelled."
+        exit 0
+      fi
+    else
+      echo "✓ Database is empty, ready for import"
+    fi
+    
+    echo ""
+    echo "Starting import (duration: 6-12 hours)..."
+    echo "Date range: $START_DATE to $(date +%Y-%m-%d)"
+    
+    systemctl start acoustid-init.service --no-block
+    
+    echo ""
+    echo "✓ Import started in background"
+    echo ""
+    echo "Monitor progress:"
+    echo "  journalctl -u acoustid-init -f"
+    echo ""
+    echo "Check status:"
+    echo "  systemctl status acoustid-init"
+  '';
+
   # ---------------------------------------------------------------------------
   # acoustid-index: Fast fingerprint search engine (Zig)
   # ---------------------------------------------------------------------------
@@ -143,21 +260,31 @@ let
   # ---------------------------------------------------------------------------
   # MusicBrainz replication tool
   # ---------------------------------------------------------------------------
+  # Override prometheus-client to use 0.20.x (required by mbslave 29.1.0)
+  prometheus-client_0_20 = pkgs.python3Packages.prometheus-client.overridePythonAttrs (old: rec {
+    version = "0.20.0";
+    src = pkgs.fetchPypi {
+      pname = "prometheus_client";
+      inherit version;
+      hash = "sha256-KHYp0AsUejLcsr4LnfkF2lmbLYL4A3cIPshGMwmku4k=";
+    };
+  });
+
   mbslave = pkgs.python3Packages.buildPythonApplication rec {
     pname = "mbslave";
-    version = "28.0.0";
+    version = "29.1.0";
     src = pkgs.fetchFromGitHub {
       owner = "acoustid";
       repo = "mbslave";
       rev = "v${version}";
-      hash = "sha256-aZMyOJyE1rhMb1OrlBOwEtypHHlC1OtJpMjluRR6zgY=";
+      hash = "sha256-XCj8Jt6uH3/cZDTxQYgkpiV4bc1Y+i/UccfNZVMZbAI=";
     };
     pyproject = true;
     build-system = [ pkgs.python3Packages.poetry-core ];
     dependencies = with pkgs.python3Packages; [
       psycopg2
       six
-      prometheus-client
+      prometheus-client_0_20
     ];
   };
 
@@ -199,19 +326,6 @@ let
     echo "MusicBrainz Initial Database Setup"
     echo "==================================="
     echo
-    
-    # Check if database already populated
-    TABLE_COUNT=$(${psql} -d musicbrainz -tAc "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'musicbrainz';" || echo 0)
-    if [ "$TABLE_COUNT" -gt 100 ]; then
-      echo "✗ Database already has $TABLE_COUNT tables"
-      echo
-      echo "To re-import, first run:"
-      echo "  sudo -u postgres psql -c 'DROP DATABASE musicbrainz;'"
-      echo "  sudo -u postgres psql -c 'CREATE DATABASE musicbrainz OWNER musicbrainz;'"
-      echo "  sudo systemctl restart musicbrainz-db-setup"
-      echo "  sudo systemctl start musicbrainz-init"
-      exit 1
-    fi
     
     # Create dump directory
     mkdir -p "$DUMP_DIR"
@@ -264,14 +378,15 @@ let
     echo "✓ Schema created"
     echo
     
-    # Enable replica mode for faster imports (disables constraints/triggers)
+    # Enable replica mode at DATABASE level (affects ALL connections)
     echo "Enabling fast import mode (disables constraints during import)..."
-    ${psql} -d musicbrainz -c "SET session_replication_role = 'replica';"
+    ${psql} -d musicbrainz -c "ALTER DATABASE musicbrainz SET session_replication_role = 'replica';"
+    echo "✓ Constraints/triggers disabled for all connections"
     echo
     
     # Import data
     echo "Importing data (2-6 hours)..."
-    echo "NOTE: Constraints/triggers disabled for performance"
+    echo "NOTE: All constraints/triggers disabled via session_replication_role"
     echo
     
     echo "[1/4] Core data (1-4 hours)..."
@@ -290,11 +405,11 @@ let
     echo "✓ Data import complete"
     echo
     
-    # Restore normal mode
-    echo "Restoring constraints..."
-    ${psql} -d musicbrainz -c "SET session_replication_role = 'origin';"
+    # Restore normal mode at DATABASE level
+    echo "Restoring constraints and rebuilding statistics..."
+    ${psql} -d musicbrainz -c "ALTER DATABASE musicbrainz RESET session_replication_role;"
     ${psql} -d musicbrainz -c "ANALYZE;"
-    echo "✓ Constraints restored"
+    echo "✓ Constraints restored and statistics rebuilt"
     echo
     
     # Show statistics
@@ -548,7 +663,9 @@ let
     set -euo pipefail
     
     # Configuration
-    START_DATE=''${ACOUSTID_START_DATE:-"2024-01-01"}
+    # Default: complete history from 2011-08-01 (first available data)
+    # For testing: ACOUSTID_START_DATE=2024-01-01 sudo systemctl start acoustid-init --no-block
+    START_DATE=''${ACOUSTID_START_DATE:-"2011-08-01"}
     END_DATE=''${ACOUSTID_END_DATE:-$(date +%Y-%m-%d)}
     DATA_DIR=/mnt/deepstor/acoustid-data
     INDEX_DIR=/mnt/deepstor/acoustid-index
@@ -562,22 +679,6 @@ let
     
     # Create directories
     mkdir -p "$DATA_DIR" "$INDEX_DIR"
-    
-    # Check if database already has data
-    TRACK_COUNT=$(${psql} -d acoustid -tAc "SELECT COUNT(*) FROM track;" || echo 0)
-    if [ "$TRACK_COUNT" -gt 0 ]; then
-      echo "⚠ Database already has $TRACK_COUNT tracks"
-      echo "This will append new data. To start fresh, first run:"
-      echo "  sudo -u postgres psql -c 'DROP DATABASE acoustid;'"
-      echo "  sudo -u postgres psql -c 'CREATE DATABASE acoustid;'"
-      echo "  sudo systemctl restart acoustid-db-setup"
-      echo
-      read -p "Continue anyway? (y/N) " -n 1 -r
-      echo
-      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 0
-      fi
-    fi
     
     # Generate URL list
     echo "Generating download URLs..."
@@ -777,7 +878,7 @@ EOF
       Type = "simple";
       User = "acoustid";
       Group = "acoustid";
-      ExecStart = "${acoustid-index}/bin/acoustid-index --dir /mnt/deepstor/acoustid-index --host 0.0.0.0 --port 8081";
+      ExecStart = "${acoustid-index}/bin/fpindex --dir /mnt/deepstor/acoustid-index --host 0.0.0.0 --port 8081";
       Restart = "always";
       RestartSec = "10s";
     };
@@ -793,7 +894,8 @@ EOF
 
   # ---------------------------------------------------------------------------
   # AcoustID initial data import
-  # Usage: ACOUSTID_START_DATE=2024-01-01 sudo systemctl start acoustid-init
+  # Usage: sudo acoustid-init
+  # Note: For testing only, use ACOUSTID_START_DATE=2024-01-01 sudo acoustid-init
   # ---------------------------------------------------------------------------
   systemd.services.acoustid-init = {
     description = "AcoustID initial data import";
@@ -803,8 +905,8 @@ EOF
     serviceConfig = {
       Type = "oneshot";
       User = "postgres";
-      StandardOutput = "journal+console";
-      StandardError = "journal+console";
+      StandardOutput = "journal";
+      StandardError = "journal";
       TimeoutStartSec = "infinity";
       ExecStart = acoustidImportScript;
     };
@@ -840,18 +942,20 @@ EOF
 
   # ---------------------------------------------------------------------------
   # Initial database setup - download dumps + import
-  # Usage: sudo systemctl start musicbrainz-init
+  # Usage: sudo musicbrainz-init
   # ---------------------------------------------------------------------------
   systemd.services.musicbrainz-init = {
     description = "MusicBrainz initial database setup (download + import)";
     after = [ "postgresql.service" "musicbrainz-db-setup.service" ];
     requires = [ "postgresql.service" "musicbrainz-db-setup.service" ];
     
+    path = [ config.services.postgresql.package ];
+    
     serviceConfig = {
       Type = "oneshot";
       User = "postgres";
-      StandardOutput = "journal+console";
-      StandardError = "journal+console";
+      StandardOutput = "journal";
+      StandardError = "journal";
       TimeoutStartSec = "infinity";
       ExecStart = musicbrainzInitScript;
     };
@@ -864,6 +968,9 @@ EOF
     description = "MusicBrainz database replication sync";
     after = [ "postgresql.service" "musicbrainz-db-setup.service" ];
     requires = [ "postgresql.service" ];
+    
+    path = [ config.services.postgresql.package ];
+    
     serviceConfig = {
       Type = "oneshot";
       User = "postgres";
@@ -916,7 +1023,9 @@ EOF
   environment.systemPackages = [ 
     mbslave
     acoustid-index
-    pkgs.chromaprint  # fpcalc for generating fingerprints
-    pkgs.aria2        # Parallel downloads for AcoustID data
+    pkgs.chromaprint        # fpcalc for generating fingerprints
+    pkgs.aria2              # Parallel downloads for AcoustID data
+    musicbrainzInitWrapper  # Wrapper: musicbrainz-init
+    acoustidInitWrapper     # Wrapper: acoustid-init
   ];
 }
