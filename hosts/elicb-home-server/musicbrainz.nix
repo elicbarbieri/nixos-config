@@ -148,10 +148,9 @@ let
         date_str = current.strftime("%Y-%m-%d")
 
         for file_type in ["fingerprint", "track", "track_mbid"]:
-            url = "{}/{}/{}/{}-{}-update.jsonl.gz".format(
+            print("{}/{}/{}/{}-{}-update.jsonl.gz".format(
                 base_url, year, month, date_str, file_type
-            )
-            print(url)
+            ))
 
         current += timedelta(days=1)
   '';
@@ -161,246 +160,192 @@ let
   # ---------------------------------------------------------------------------
   acoustidImportPython = pkgs.writeText "acoustid-import.py" ''
     import sys, gzip, json, psycopg2
+    from psycopg2.extras import execute_values
     from datetime import datetime, timedelta
     from pathlib import Path
-    from io import StringIO
+    from urllib.request import Request, urlopen
+    from urllib.error import HTTPError
+
+    INDEX_URL = "http://localhost:8081/acoustid/_update"
+    FP_BATCH  = 10000
+    DB_BATCH  = 50000
+
+    # Ensure the index exists (idempotent PUT)
+    try:
+        urlopen(Request("http://localhost:8081/acoustid", method="PUT"))
+    except HTTPError:
+        pass  # already exists
 
     conn = psycopg2.connect("dbname=acoustid user=postgres")
-    cur = conn.cursor()
-
-    conn.set_session(autocommit=False)
-    cur.execute("SET synchronous_commit = OFF")
-    cur.execute("SET maintenance_work_mem = '2GB'")
-    cur.execute("SET session_replication_role = 'replica'")
-
-    def bulk_import_tracks(filepath):
-        print("  Importing tracks...")
-        buffer = StringIO()
-        count = 0
-
-        with gzip.open(filepath, 'rt') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    data = json.loads(line)
-                    gid = data.get('gid') or ""
-                    buffer.write("{}\\t{}\\n".format(data['id'], gid))
-                    count += 1
-
-                    if count % 50000 == 0:
-                        buffer.seek(0)
-                        cur.copy_expert(
-                            "COPY track (id, gid) FROM STDIN WITH (FORMAT text)",
-                            buffer
-                        )
-                        conn.commit()
-                        buffer = StringIO()
-                        print("    {:,} records...".format(count), end="\r", flush=True)
-                except Exception as e:
-                    print("\n    Error: {}".format(e))
-                    continue
-
-        if buffer.tell() > 0:
-            buffer.seek(0)
-            cur.copy_expert(
-                "COPY track (id, gid) FROM STDIN WITH (FORMAT text)",
-                buffer
-            )
-            conn.commit()
-
-        print("    {:,} records total".format(count))
-        return count
-
-    def bulk_import_track_mbids(filepath):
-        print("  Importing track→MBID mappings...")
-        buffer = StringIO()
-        count = 0
-
-        with gzip.open(filepath, 'rt') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    data = json.loads(line)
-                    if data.get('disabled'):
-                        continue
-
-                    buffer.write("{}\\t{}\\t{}\\t{}\\n".format(
-                        data['id'],
-                        data['track_id'],
-                        data['mbid'],
-                        data.get('submission_count', 0)
-                    ))
-                    count += 1
-
-                    if count % 50000 == 0:
-                        buffer.seek(0)
-                        cur.copy_expert(
-                            "COPY track_mbid (id, track_id, mbid, submission_count) "
-                            "FROM STDIN WITH (FORMAT text)",
-                            buffer
-                        )
-                        conn.commit()
-                        buffer = StringIO()
-                        print("    {:,} records...".format(count), end="\r", flush=True)
-                except Exception as e:
-                    print("\n    Error: {}".format(e))
-                    continue
-
-        if buffer.tell() > 0:
-            buffer.seek(0)
-            cur.copy_expert(
-                "COPY track_mbid (id, track_id, mbid, submission_count) "
-                "FROM STDIN WITH (FORMAT text)",
-                buffer
-            )
-            conn.commit()
-
-        print("    {:,} records total".format(count))
-        return count
-
-    def bulk_import_fingerprints(filepath, index_dir):
-        print("  Processing fingerprints...")
-        fp_file = "{}/fingerprints.jsonl".format(index_dir)
-        count = 0
-
-        with gzip.open(filepath, 'rt') as f_in, open(fp_file, 'a') as f_out:
-            for line in f_in:
-                if not line.strip():
-                    continue
-                try:
-                    data = json.loads(line)
-                    f_out.write(json.dumps({
-                        "insert": {
-                            "id": data['id'],
-                            "hashes": data['fingerprint'][:120]
-                        }
-                    }) + '\n')
-                    count += 1
-
-                    if count % 50000 == 0:
-                        print("    {:,} records...".format(count), end="\r", flush=True)
-                except Exception as e:
-                    print("\n    Error: {}".format(e))
-                    continue
-
-        print("    {:,} records total".format(count))
-        return count
-
-    data_dir = Path(sys.argv[1])
-    index_dir = sys.argv[2]
-    start_date = datetime.strptime(sys.argv[3], "%Y-%m-%d")
-    end_date = datetime.strptime(sys.argv[4], "%Y-%m-%d")
-    current_date = start_date
-
-    total_days = (end_date - start_date).days + 1
-    day_num = 0
-
-    total_tracks = 0
-    total_mbids = 0
-    total_fps = 0
-
-    while current_date <= end_date:
-        day_num += 1
-        date_str = current_date.strftime("%Y-%m-%d")
-        print("\n[{}/{}] Processing {}".format(day_num, total_days, date_str))
-
-        track_file = data_dir / "{}-track-update.jsonl.gz".format(date_str)
-        if track_file.exists():
-            total_tracks += bulk_import_tracks(track_file)
-
-        mbid_file = data_dir / "{}-track_mbid-update.jsonl.gz".format(date_str)
-        if mbid_file.exists():
-            total_mbids += bulk_import_track_mbids(mbid_file)
-
-        fp_file = data_dir / "{}-fingerprint-update.jsonl.gz".format(date_str)
-        if fp_file.exists():
-            total_fps += bulk_import_fingerprints(fp_file, index_dir)
-
-        current_date += timedelta(days=1)
-
-    print("\nRestoring constraints...")
-    cur.execute("SET session_replication_role = 'origin'")
-    cur.execute("ANALYZE")
+    cur  = conn.cursor()
+    cur.execute("SET synchronous_commit=OFF")
+    cur.execute("SET maintenance_work_mem='2GB'")
+    cur.execute("SET session_replication_role='replica'")
     conn.commit()
 
+    def pg_flush(rows, table, cols):
+        execute_values(
+            cur,
+            f"INSERT INTO {table} ({','.join(cols)}) VALUES %s ON CONFLICT DO NOTHING",
+            rows
+        )
+        conn.commit()
+
+    def import_tracks(path):
+        rows, n = [], 0
+        with gzip.open(path, 'rt') as f:
+            for line in f:
+                if not line.strip(): continue
+                d = json.loads(line)
+                rows.append((d['id'], d.get('gid') or None))
+                n += 1
+                if n % DB_BATCH == 0:
+                    pg_flush(rows, "track", ["id", "gid"])
+                    rows = []
+        if rows: pg_flush(rows, "track", ["id", "gid"])
+        return n
+
+    def import_track_mbids(path):
+        rows, n = [], 0
+        cols = ["id", "track_id", "mbid", "submission_count"]
+        with gzip.open(path, 'rt') as f:
+            for line in f:
+                if not line.strip(): continue
+                d = json.loads(line)
+                if d.get('disabled'): continue
+                rows.append((d['id'], d['track_id'], d['mbid'], d.get('submission_count', 0)))
+                n += 1
+                if n % DB_BATCH == 0:
+                    pg_flush(rows, "track_mbid", cols)
+                    rows = []
+        if rows: pg_flush(rows, "track_mbid", cols)
+        return n
+
+    def index_fingerprints(path):
+        batch, n = [], 0
+        with gzip.open(path, 'rt') as f:
+            for line in f:
+                if not line.strip(): continue
+                d = json.loads(line)
+                # Chromaprint emits signed int32; acoustid-index requires u32
+                hashes = [h & 0xFFFFFFFF for h in d['fingerprint'][:120]]
+                batch.append({"insert": {"id": d['id'], "hashes": hashes}})
+                n += 1
+                if len(batch) >= FP_BATCH:
+                    body = json.dumps({"changes": batch}).encode()
+                    urlopen(Request(INDEX_URL, data=body, headers={"Content-Type": "application/json"}))
+                    batch = []
+        if batch:
+            body = json.dumps({"changes": batch}).encode()
+            urlopen(Request(INDEX_URL, data=body, headers={"Content-Type": "application/json"}))
+        return n
+
+    data_dir   = Path(sys.argv[1])
+    start_date = datetime.strptime(sys.argv[2], "%Y-%m-%d")
+    end_date   = datetime.strptime(sys.argv[3], "%Y-%m-%d")
+    marker_dir = data_dir / ".imported"
+    marker_dir.mkdir(exist_ok=True)
+
+    total_days = (end_date - start_date).days + 1
+    total_tracks = total_mbids = total_fps = skipped = 0
+    current_date = start_date
+
+    while current_date <= end_date:
+        day = current_date.strftime("%Y-%m-%d")
+        day_num = (current_date - start_date).days + 1
+        current_date += timedelta(days=1)
+
+        if (marker_dir / day).exists():
+            skipped += 1
+            continue
+
+        print(f"[{day_num}/{total_days}] {day}", flush=True)
+
+        for suffix, fn, counter in [
+            ("track",       import_tracks,       "tracks"),
+            ("track_mbid",  import_track_mbids,  "mbids"),
+            ("fingerprint", index_fingerprints,  "fps"),
+        ]:
+            path = data_dir / f"{day}-{suffix}-update.jsonl.gz"
+            if path.exists():
+                n = fn(path)
+                print(f"  {suffix}: {n:,}", flush=True)
+                if suffix == "track":       total_tracks += n
+                elif suffix == "track_mbid": total_mbids += n
+                else:                       total_fps    += n
+
+        (marker_dir / day).touch()
+
+    cur.execute("SET session_replication_role='origin'")
+    cur.execute("ANALYZE track")
+    cur.execute("ANALYZE track_mbid")
+    conn.commit()
     cur.close()
     conn.close()
 
-    print("\n" + "="*50)
-    print("✓ Import complete!")
-    print("="*50)
-    print("Total tracks: {:,}".format(total_tracks))
-    print("Total track→MBID mappings: {:,}".format(total_mbids))
-    print("Total fingerprints: {:,}".format(total_fps))
+    print(f"\nDone. Skipped {skipped} days already imported.")
+    print(f"Tracks: {total_tracks:,}  MBIDs: {total_mbids:,}  Fingerprints: {total_fps:,}")
   '';
 
   # ---------------------------------------------------------------------------
   # AcoustID import script
   # ---------------------------------------------------------------------------
   acoustidImportScript = let
-    psql = "${config.services.postgresql.package}/bin/psql";
-    python = "${pkgs.python3}/bin/python3";
+    python = "${pkgs.python3.withPackages (ps: [ ps.psycopg2 ])}/bin/python3";
     aria2c = "${pkgs.aria2}/bin/aria2c";
   in pkgs.writeShellScript "acoustid-import" ''
     set -euo pipefail
 
-    START_DATE=''${ACOUSTID_START_DATE:-"2011-08-01"}
-    END_DATE=''${ACOUSTID_END_DATE:-$(date +%Y-%m-%d)}
+    START_DATE=''${ACOUSTID_START_DATE:-"2011-08-19"}
+    END_DATE=''${ACOUSTID_END_DATE:-$(date -d yesterday +%Y-%m-%d)}
     DATA_DIR=/mnt/deepstor/acoustid-data
-    INDEX_DIR=/mnt/deepstor/acoustid-index
 
     echo "AcoustID Database Import"
     echo "========================"
     echo "Date range: $START_DATE to $END_DATE"
     echo
 
-    mkdir -p "$DATA_DIR" "$INDEX_DIR"
+    mkdir -p "$DATA_DIR"
 
     echo "Generating download URLs..."
-    ${python} ${acoustidUrlGenerator} "$START_DATE" "$END_DATE" > "$DATA_DIR/urls.txt"
-    URL_COUNT=$(wc -l < "$DATA_DIR/urls.txt")
-    echo "Generated $URL_COUNT URLs"
+    ${python} ${acoustidUrlGenerator} "$START_DATE" "$END_DATE" > "$DATA_DIR/urls-all.txt"
+    URL_COUNT=$(wc -l < "$DATA_DIR/urls-all.txt")
+
+    # Filter out URLs for files already on disk
+    > "$DATA_DIR/urls.txt"
+    while IFS= read -r url; do
+      filename=$(basename "$url")
+      [ -f "$DATA_DIR/$filename" ] || echo "$url" >> "$DATA_DIR/urls.txt"
+    done < "$DATA_DIR/urls-all.txt"
+    SKIP_COUNT=$((URL_COUNT - $(wc -l < "$DATA_DIR/urls.txt")))
+    echo "Generated $URL_COUNT URLs ($SKIP_COUNT skipped, already downloaded)"
     echo
 
-    echo "Downloading dumps with aria2c..."
-    ${aria2c} \
-      --input-file="$DATA_DIR/urls.txt" \
-      --dir="$DATA_DIR" \
-      --max-connection-per-server=2 \
-      --max-concurrent-downloads=4 \
-      --min-split-size=10M \
-      --max-overall-download-limit=50M \
-      --continue=true \
-      --auto-file-renaming=false \
-      --allow-overwrite=false \
-      --summary-interval=10
-
-    echo
-    echo "Importing data into PostgreSQL..."
-    ${python} ${acoustidImportPython} "$DATA_DIR" "$INDEX_DIR" "$START_DATE" "$END_DATE"
-
-    echo
-    echo "Database statistics:"
-    ${psql} -d acoustid -c "
-      SELECT 'Tracks' as type, COUNT(*)::text as count FROM track
-      UNION ALL SELECT 'Track→MBID mappings', COUNT(*)::text FROM track_mbid;
-    "
-
-    if [ -f "$INDEX_DIR/fingerprints.jsonl" ]; then
-      echo
-      echo "Loading fingerprints into acoustid-index..."
-      ${pkgs.curl}/bin/curl -X POST \
-        -H "Content-Type: application/x-ndjson" \
-        --data-binary @"$INDEX_DIR/fingerprints.jsonl" \
-        http://localhost:8081/acoustid/_update
-      echo "✓ Fingerprint index updated"
-      rm "$INDEX_DIR/fingerprints.jsonl"
+    if [ -s "$DATA_DIR/urls.txt" ]; then
+      echo "Downloading dumps with aria2c..."
+      # Allow 404s (some dates may not have dumps yet); aria2c exit 0=ok, others=partial failure
+      ${aria2c} \
+        --input-file="$DATA_DIR/urls.txt" \
+        --dir="$DATA_DIR" \
+        --max-connection-per-server=2 \
+        --max-concurrent-downloads=4 \
+        --min-split-size=10M \
+        --max-overall-download-limit=50M \
+        --continue=true \
+        --auto-file-renaming=false \
+        --allow-overwrite=false \
+        --summary-interval=10 \
+        --max-tries=1 || echo "Warning: some downloads failed (404s expected for missing dates)"
+    else
+      echo "All files already downloaded, skipping aria2c."
     fi
 
     echo
-    echo "✓ AcoustID database ready!"
+    echo "Importing data..."
+    ${python} ${acoustidImportPython} "$DATA_DIR" "$START_DATE" "$END_DATE"
+
+    echo
+    echo "✓ AcoustID import complete!"
   '';
 in
 {
