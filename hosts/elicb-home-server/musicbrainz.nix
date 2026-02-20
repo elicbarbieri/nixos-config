@@ -159,16 +159,16 @@ let
   # AcoustID data import Python script
   # ---------------------------------------------------------------------------
   acoustidImportPython = pkgs.writeText "acoustid-import.py" ''
-    import sys, gzip, json, psycopg2
+    import sys, gzip, json, msgpack, psycopg2
     from psycopg2.extras import execute_values
     from datetime import datetime, timedelta
     from pathlib import Path
     from urllib.request import Request, urlopen
     from urllib.error import HTTPError
 
-    INDEX_URL = "http://localhost:8081/acoustid/_update"
-    FP_BATCH  = 10000
-    DB_BATCH  = 50000
+    INDEX_URL  = "http://localhost:8081/acoustid/_update"
+    BATCH_SIZE = 1000   # matches production acoustid-server consumer batch size
+    DB_BATCH   = 50000
 
     # Ensure the index exists (idempotent PUT)
     try:
@@ -176,7 +176,7 @@ let
     except HTTPError:
         pass  # already exists
 
-    conn = psycopg2.connect("dbname=acoustid user=postgres")
+    conn = psycopg2.connect("dbname=acoustid_db user=postgres")
     cur  = conn.cursor()
     cur.execute("SET synchronous_commit=OFF")
     cur.execute("SET maintenance_work_mem='2GB'")
@@ -221,6 +221,15 @@ let
         if rows: pg_flush(rows, "track_mbid", cols)
         return n
 
+    def send_batch(batch):
+        # Matches production UpdateRequest/Change/Insert msgpack structs exactly:
+        #   UpdateRequest.changes -> "c"
+        #   Change.insert        -> "i"
+        #   Insert.id            -> "i"
+        #   Insert.hashes        -> "h"
+        body = msgpack.packb({"c": [{"i": {"i": fp_id, "h": hashes}} for fp_id, hashes in batch]})
+        urlopen(Request(INDEX_URL, data=body, headers={"Content-Type": "application/vnd.msgpack"}))
+
     def index_fingerprints(path):
         batch, n = [], 0
         with gzip.open(path, 'rt') as f:
@@ -229,15 +238,13 @@ let
                 d = json.loads(line)
                 # Chromaprint emits signed int32; acoustid-index requires u32
                 hashes = [h & 0xFFFFFFFF for h in d['fingerprint'][:120]]
-                batch.append({"insert": {"id": d['id'], "hashes": hashes}})
+                batch.append((d['id'], hashes))
                 n += 1
-                if len(batch) >= FP_BATCH:
-                    body = json.dumps({"changes": batch}).encode()
-                    urlopen(Request(INDEX_URL, data=body, headers={"Content-Type": "application/json"}))
+                if len(batch) >= BATCH_SIZE:
+                    send_batch(batch)
                     batch = []
         if batch:
-            body = json.dumps({"changes": batch}).encode()
-            urlopen(Request(INDEX_URL, data=body, headers={"Content-Type": "application/json"}))
+            send_batch(batch)
         return n
 
     data_dir   = Path(sys.argv[1])
@@ -291,7 +298,7 @@ let
   # AcoustID import script
   # ---------------------------------------------------------------------------
   acoustidImportScript = let
-    python = "${pkgs.python3.withPackages (ps: [ ps.psycopg2 ])}/bin/python3";
+    python = "${pkgs.python3.withPackages (ps: [ ps.psycopg2 ps.msgpack ])}/bin/python3";
     aria2c = "${pkgs.aria2}/bin/aria2c";
   in pkgs.writeShellScript "acoustid-import" ''
     set -euo pipefail
@@ -360,25 +367,23 @@ in
 
     authentication = lib.mkAfter ''
       # Docker containers reach host PostgreSQL via docker0 bridge (trust, host-internal only)
-      host    musicbrainz_db musicbrainz 172.16.0.0/12 trust
-      host    template1      musicbrainz 172.16.0.0/12 trust
+      host    musicbrainz_db musicbrainz              172.16.0.0/12 trust
+      host    template1      musicbrainz              172.16.0.0/12 trust
       # acoustid runs on the host itself (trust, loopback only)
-      host    acoustid       acoustid    127.0.0.1/32  trust
+      host    acoustid_db    acoustid                 127.0.0.1/32  trust
       # Remote access requires SSL + password
-      hostssl musicbrainz_db musicbrainz 0.0.0.0/0    md5
-      hostssl acoustid       acoustid    0.0.0.0/0    md5
+      hostssl musicbrainz_db musicbrainz              0.0.0.0/0     md5
+      hostssl musicbrainz_db musicbrainz_read_only    0.0.0.0/0     md5
+      hostssl acoustid_db    acoustid                 0.0.0.0/0     md5
+      hostssl acoustid_db    acoustid_read_only       0.0.0.0/0     md5
     '';
 
-    ensureDatabases = [ "musicbrainz_db" "acoustid" ];
+    ensureDatabases = [ "musicbrainz_db" "acoustid_db" ];
     ensureUsers = [
-      {
-        name = "musicbrainz";
-        ensureDBOwnership = false;
-      }
-      {
-        name = "acoustid";
-        ensureDBOwnership = true;
-      }
+      { name = "musicbrainz";           ensureDBOwnership = false; }
+      { name = "musicbrainz_read_only"; ensureDBOwnership = false; }
+      { name = "acoustid";              ensureDBOwnership = false; }
+      { name = "acoustid_read_only";    ensureDBOwnership = false; }
     ];
 
     settings = {
@@ -421,7 +426,7 @@ in
 
   systemd.tmpfiles.rules = [
     "d /mnt/md0/postgresql 0700 postgres postgres -"
-    "d /mnt/deepstor/acoustid-index 0755 acoustid acoustid -"
+    "d /mnt/md0/acoustid-index 0755 acoustid acoustid -"
     "d /mnt/deepstor/acoustid-data 0755 postgres postgres -"
     "d ${musicbrainzDockerRoot} 0755 root root -"
   ];
@@ -447,13 +452,21 @@ in
           ${psql} -d musicbrainz_db -c "CREATE EXTENSION IF NOT EXISTS earthdistance;"
 
           MB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path} | sed "s/'/'''/g")
+          MB_RO_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password-read-only".path} | sed "s/'/'''/g")
           ${psql} -d musicbrainz_db <<EOF
 ALTER USER musicbrainz PASSWORD '$MB_PASSWORD';
+ALTER USER musicbrainz_read_only PASSWORD '$MB_RO_PASSWORD';
+GRANT pg_read_all_data TO musicbrainz_read_only;
 EOF
 
+          ${psql} -d acoustid_db -c "ALTER DATABASE acoustid_db OWNER TO acoustid;"
+
           ACOUSTID_PASSWORD=$(cat ${config.sops.secrets."acoustid/db-password".path} | sed "s/'/'''/g")
-          ${psql} -d acoustid <<EOF
+          ACOUSTID_RO_PASSWORD=$(cat ${config.sops.secrets."acoustid/db-password-read-only".path} | sed "s/'/'''/g")
+          ${psql} -d acoustid_db <<EOF
 ALTER USER acoustid PASSWORD '$ACOUSTID_PASSWORD';
+ALTER USER acoustid_read_only PASSWORD '$ACOUSTID_RO_PASSWORD';
+GRANT pg_read_all_data TO acoustid_read_only;
 EOF
         '';
     };
@@ -552,7 +565,7 @@ EOF
         pkgs.writeShellScript "acoustid-db-setup" ''
           set -euo pipefail
 
-          ${psql} -d acoustid << 'EOF'
+          ${psql} -d acoustid_db << 'EOF'
 CREATE TABLE IF NOT EXISTS track (
     id INTEGER PRIMARY KEY,
     gid UUID
@@ -599,7 +612,7 @@ EOF
       Type = "simple";
       User = "acoustid";
       Group = "acoustid";
-      ExecStart = "${acoustid-index}/bin/fpindex --dir /mnt/deepstor/acoustid-index --host 0.0.0.0 --port 8081";
+      ExecStart = "${acoustid-index}/bin/fpindex --dir /mnt/md0/acoustid-index --host 0.0.0.0 --port 8081";
       Restart = "always";
       RestartSec = "10s";
     };
@@ -666,7 +679,15 @@ EOF
     owner = "postgres";
     mode = "0400";
   };
+  sops.secrets."musicbrainz/db-password-read-only" = {
+    owner = "postgres";
+    mode = "0400";
+  };
   sops.secrets."acoustid/db-password" = {
+    owner = "postgres";
+    mode = "0400";
+  };
+  sops.secrets."acoustid/db-password-read-only" = {
     owner = "postgres";
     mode = "0400";
   };
