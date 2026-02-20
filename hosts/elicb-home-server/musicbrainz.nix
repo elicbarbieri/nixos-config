@@ -359,16 +359,21 @@ in
     enableTCPIP = true;
 
     authentication = lib.mkAfter ''
-      host musicbrainz musicbrainz 172.16.0.0/12 scram-sha-256
-      host musicbrainz musicbrainz 0.0.0.0/0 scram-sha-256
-      host acoustid acoustid 0.0.0.0/0 scram-sha-256
+      # Docker containers reach host PostgreSQL via docker0 bridge (trust, host-internal only)
+      host    musicbrainz_db musicbrainz 172.16.0.0/12 trust
+      host    template1      musicbrainz 172.16.0.0/12 trust
+      # acoustid runs on the host itself (trust, loopback only)
+      host    acoustid       acoustid    127.0.0.1/32  trust
+      # Remote access requires SSL + password
+      hostssl musicbrainz_db musicbrainz 0.0.0.0/0    md5
+      hostssl acoustid       acoustid    0.0.0.0/0    md5
     '';
 
-    ensureDatabases = [ "musicbrainz" "acoustid" ];
+    ensureDatabases = [ "musicbrainz_db" "acoustid" ];
     ensureUsers = [
       {
         name = "musicbrainz";
-        ensureDBOwnership = true;
+        ensureDBOwnership = false;
       }
       {
         name = "acoustid";
@@ -382,12 +387,36 @@ in
       work_mem = "256MB";
       maintenance_work_mem = "512MB";
       listen_addresses = "*";
+      ssl = true;
     };
   };
 
   systemd.services.postgresql = {
+    after = [ "mnt-md0.mount" "postgresql-ssl-cert.service" ];
+    requires = [ "mnt-md0.mount" "postgresql-ssl-cert.service" ];
+  };
+
+  systemd.services.postgresql-ssl-cert = {
+    description = "Generate self-signed SSL certificate for PostgreSQL";
     after = [ "mnt-md0.mount" ];
     requires = [ "mnt-md0.mount" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "postgres";
+      ExecStart = pkgs.writeShellScript "postgresql-ssl-cert" ''
+        set -euo pipefail
+        CERT_DIR="/mnt/md0/postgresql"
+        if [ ! -f "$CERT_DIR/server.crt" ] || [ ! -f "$CERT_DIR/server.key" ]; then
+          ${pkgs.openssl}/bin/openssl req -new -x509 -days 3650 -nodes \
+            -out "$CERT_DIR/server.crt" \
+            -keyout "$CERT_DIR/server.key" \
+            -subj "/CN=postgres"
+          chmod 600 "$CERT_DIR/server.key"
+          chmod 644 "$CERT_DIR/server.crt"
+        fi
+      '';
+    };
   };
 
   systemd.tmpfiles.rules = [
@@ -413,12 +442,18 @@ in
         pkgs.writeShellScript "musicbrainz-db-setup" ''
           set -euo pipefail
 
-          ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS cube;"
-          ${psql} -d musicbrainz -c "CREATE EXTENSION IF NOT EXISTS earthdistance;"
+          ${psql} -d musicbrainz_db -c "ALTER DATABASE musicbrainz_db OWNER TO musicbrainz;"
+          ${psql} -d musicbrainz_db -c "CREATE EXTENSION IF NOT EXISTS cube;"
+          ${psql} -d musicbrainz_db -c "CREATE EXTENSION IF NOT EXISTS earthdistance;"
 
-          DB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path} | sed "s/'/'''/g")
-          ${psql} -d musicbrainz <<EOF
-ALTER USER musicbrainz PASSWORD '$DB_PASSWORD';
+          MB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path} | sed "s/'/'''/g")
+          ${psql} -d musicbrainz_db <<EOF
+ALTER USER musicbrainz PASSWORD '$MB_PASSWORD';
+EOF
+
+          ACOUSTID_PASSWORD=$(cat ${config.sops.secrets."acoustid/db-password".path} | sed "s/'/'''/g")
+          ${psql} -d acoustid <<EOF
+ALTER USER acoustid PASSWORD '$ACOUSTID_PASSWORD';
 EOF
         '';
     };
@@ -450,17 +485,14 @@ EOF
         # Get host IP for Docker containers to reach host PostgreSQL
         HOST_IP=$(${pkgs.iproute2}/bin/ip -4 addr show docker0 2>/dev/null | ${pkgs.gnugrep}/bin/grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
 
-        # Read DB password from sops
-        DB_PASSWORD=$(cat ${config.sops.secrets."musicbrainz/db-password".path})
-
         # Compose override to route musicbrainz container to host PostgreSQL
+        # No password needed — trust auth for Docker bridge subnet
         ${pkgs.coreutils}/bin/cat > docker-compose.host-db.yml <<EOF
 services:
   musicbrainz:
     environment:
       - MUSICBRAINZ_POSTGRES_SERVER=$HOST_IP
       - MUSICBRAINZ_POSTGRES_READONLY_SERVER=$HOST_IP
-      - POSTGRES_PASSWORD=$DB_PASSWORD
 EOF
 
         ${pkgs.coreutils}/bin/cat > .env <<EOF
@@ -643,7 +675,7 @@ EOF
   # Firewall & packages
   # ---------------------------------------------------------------------------
   networking.firewall.allowedTCPPorts = [
-    5432  # PostgreSQL
+    5432  # PostgreSQL (SSL only for remote — see hostssl pg_hba entries)
     8081  # acoustid-index
   ];
 
