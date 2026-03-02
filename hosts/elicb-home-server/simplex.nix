@@ -1,7 +1,10 @@
 # SimpleX Chat CLI — private messaging without user identifiers
 # Runs in a tmux session as a dedicated system user
 # Access: sudo -u simplex tmux attach -t simplex
-{ pkgs, simplex-chat, ... }:
+{ pkgs, ... }:
+let
+  simplex-chat = pkgs.callPackage ../../pkgs/simplex-chat.nix {};
+in
 {
   users.users.simplex = {
     isSystemUser = true;

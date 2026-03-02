@@ -14,10 +14,9 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
-    simplex-chat.url = "github:simplex-chat/simplex-chat/stable";
   };
 
-  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, simplex-chat, ... }:
+  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, ... }:
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -100,10 +99,7 @@
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];
-        specialArgs = {
-          inherit self nixvim sops-nix;
-          simplex-chat = simplex-chat.packages.x86_64-linux."exe:simplex-chat";
-        };
+        specialArgs = { inherit self nixvim sops-nix; };
       };
 
       # Dell Desktop configuration - RTX 2070 Super
