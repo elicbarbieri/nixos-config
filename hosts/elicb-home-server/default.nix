@@ -139,7 +139,7 @@ in
     wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
     accessibleFrom = [
       "100.64.0.0/24"
-      "127.0.0.1/32"
+      "192.168.15.0/24"   # host services (arr stack) via wg-br
     ];
     portMappings = [
       { from = 58846; to = 58846; protocol = "tcp"; }
