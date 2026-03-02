@@ -138,8 +138,8 @@ in
     enable = true;
     wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
     accessibleFrom = [
-      "100.64.0.0/24"
-      "192.168.15.0/24"   # host services (arr stack) via wg-br
+      "100.64.0.0/24"   # Nebula mesh network
+      "127.0.0.1/32"    # localhost (radarr, sonarr, etc.)
     ];
     portMappings = [
       { from = 58846; to = 58846; protocol = "tcp"; }
