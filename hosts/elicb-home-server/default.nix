@@ -1,5 +1,5 @@
 # Home Server Configuration
-{ config, pkgs, nixvim, ... }:
+{ config, pkgs, nixvim, simplex-chat, ... }:
 
 let
   base-packages = import ../../modules/base-packages.nix { inherit pkgs nixvim; };
@@ -12,6 +12,8 @@ in
     ./arr.nix
     ./minecraft.nix
     ./musicbrainz.nix
+    ./immich.nix
+    ./simplex.nix
   ];
 
   # sops-nix configuration
@@ -30,6 +32,9 @@ in
       };
       "ark/admin-password" = {};
       "ark/server-password" = {};
+      "nebula/ca-crt" = {};
+      "nebula/host-crt" = {};
+      "nebula/host-key" = {};
     };
 
   };
@@ -132,7 +137,10 @@ in
   vpnNamespaces.wg = {
     enable = true;
     wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
-    accessibleFrom = [ "192.168.1.0/24" ];
+    accessibleFrom = [
+      "100.64.0.0/24"
+      "127.0.0.1/32"
+    ];
     portMappings = [
       { from = 58846; to = 58846; protocol = "tcp"; }
     ];
@@ -149,6 +157,9 @@ in
     enable = true;
     vpnNamespace = "wg";
   };
+
+  # Nebula lighthouse
+  nebula.isLighthouse = true;
 
   # Docker container backend (containers defined in ark.nix)
   virtualisation.oci-containers.backend = "docker";

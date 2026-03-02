@@ -8,6 +8,17 @@
     ./disko-config.nix
   ];
 
+  # sops-nix configuration
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/age/keys.txt";
+    secrets = {
+      "nebula/ca-crt" = {};
+      "nebula/host-crt" = {};
+      "nebula/host-key" = {};
+    };
+  };
+
   networking.hostName = "elicb-dell-desktop";
 
   # Ax-shell: only show bar on primary monitor (DP-1)

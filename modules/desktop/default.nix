@@ -71,12 +71,27 @@ in
       };
     };
 
-    # Audio
     pipewire = {
       enable = true;
       alsa.enable = true;
       alsa.support32Bit = true;
       pulse.enable = true;
+
+      # RT scheduling module with proper priorities
+      extraConfig.pipewire."91-realtime" = {
+        "context.modules" = [
+          {
+            name = "libpipewire-module-rt";
+            args = {
+              "nice.level" = -15;
+              "rt.prio" = 88;
+              "rt.time.soft" = 200000;
+              "rt.time.hard" = 200000;
+            };
+            flags = [ "ifexists" "nofail" ];
+          }
+        ];
+      };
     };
 
     # Hardware services
@@ -115,6 +130,13 @@ in
 
     # PAM configuration for auto-unlocking gnome-keyring
     pam.services.sddm.enableGnomeKeyring = true;
+
+    # PAM limits for @audio - gives PipeWire RLIMIT_RTPRIO (preferred over rtkit)
+    pam.loginLimits = [
+      { domain = "@audio"; item = "memlock"; type = "-"; value = "unlimited"; }
+      { domain = "@audio"; item = "rtprio";  type = "-"; value = "99"; }
+      { domain = "@audio"; item = "nice";    type = "-"; value = "-20"; }
+    ];
   };
 
 
@@ -201,6 +223,12 @@ in
       RestartSec = "5";
     };
   };
+
+  # Kernel tuning for realtime audio
+  boot.kernelParams = [
+    "preempt=full"  # Full kernel preemption - reduces scheduling latency
+    "threadirqs"    # Threaded IRQ handlers - preemptible by RT threads
+  ];
 
   # Fix Intel SOF audio driver bugs during gaming (disable audio power saving)
   boot.extraModprobeConfig = ''

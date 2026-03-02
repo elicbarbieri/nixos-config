@@ -14,9 +14,10 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
+    simplex-chat.url = "github:simplex-chat/simplex-chat/stable";
   };
 
-  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, ... }:
+  outputs = { self, nixpkgs, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, simplex-chat, ... }:
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -57,6 +58,7 @@
         modules = [
           ./hosts/elicb-xps
           ./modules/common.nix
+          ./modules/nebula.nix
           ./modules/nvidia-cuda.nix
           ./modules/desktop
           ./modules/vm-variant.nix
@@ -83,6 +85,7 @@
         modules = [
           ./hosts/elicb-home-server
           ./modules/common.nix
+          ./modules/nebula.nix
           ./modules/vm-variant.nix
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
@@ -97,7 +100,10 @@
             home-manager.extraSpecialArgs = { inherit nixvim; };
           }
         ];
-        specialArgs = { inherit self nixvim sops-nix; };
+        specialArgs = {
+          inherit self nixvim sops-nix;
+          simplex-chat = simplex-chat.packages.x86_64-linux."exe:simplex-chat";
+        };
       };
 
       # Dell Desktop configuration - RTX 2070 Super
@@ -106,6 +112,7 @@
         modules = [
           ./hosts/elicb-dell-desktop
           ./modules/common.nix
+          ./modules/nebula.nix
           ./modules/nvidia-cuda.nix
           ./modules/desktop
           ./modules/vm-variant.nix

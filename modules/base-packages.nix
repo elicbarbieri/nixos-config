@@ -29,6 +29,9 @@ let
     jq
     xxd
     tree
+    tokei
+
+    nebula
     traceroute
     arp-scan
     iperf3
