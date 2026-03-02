@@ -5,14 +5,14 @@
     # Override the package to use Mermaid v11.10.1 with ELK layout support
     package = pkgs.vimPlugins.markdown-preview-nvim.overrideAttrs (old: {
       postInstall = let
-        mermaidVersion = "11.10.1";
+        mermaidVersion = "11.12.3";
         elkLayoutVersion = "0.2.0";
         elkjsVersion = "0.9.3";
 
         # Mermaid v11.10.1
         mermaidJs = pkgs.fetchurl {
           url = "https://cdn.jsdelivr.net/npm/mermaid@${mermaidVersion}/dist/mermaid.min.js";
-          sha256 = "0664267560d2f17d8e4dbaf010b58adfae8b57a7ac7325a11c77b45c24d4fc79";
+          sha256 = "16m8zp937qq29m9cbaaxnynab7y903mw45g6wmnm56vph7j59p3i";
         };
 
         elkjsBundle = pkgs.fetchurl {
