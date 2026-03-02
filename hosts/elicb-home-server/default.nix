@@ -32,9 +32,9 @@ in
       };
       "ark/admin-password" = {};
       "ark/server-password" = {};
-      "nebula/ca-crt" = {};
-      "nebula/host-crt" = {};
-      "nebula/host-key" = {};
+      "nebula/ca-crt" = { owner = "nebula-mesh"; };
+      "nebula/host-crt" = { owner = "nebula-mesh"; };
+      "nebula/host-key" = { owner = "nebula-mesh"; };
     };
 
   };
