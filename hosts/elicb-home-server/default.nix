@@ -99,7 +99,7 @@ in
 
   services.deluge = {
     enable = true;
-    web.enable = false;
+    web.enable = true;
     declarative = true;
     config = {
       daemon_port = 58846;
@@ -129,6 +129,8 @@ in
       dht = true;                          # Enable DHT
       utpex = true;                        # Enable peer exchange
       lsd = true;                          # Enable Local Service Discovery
+
+      enabled_plugins = [ "Label" ];
     };
     authFile = config.sops.secrets."deluge/auth".path;
   };
@@ -143,6 +145,7 @@ in
     ];
     portMappings = [
       { from = 58846; to = 58846; protocol = "tcp"; }
+      { from = 8112; to = 8112; protocol = "tcp"; }
     ];
     openVPNPorts = [
       { port = 24403; protocol = "both"; }
@@ -154,6 +157,11 @@ in
   };
 
   systemd.services.deluged.vpnConfinement = {
+    enable = true;
+    vpnNamespace = "wg";
+  };
+
+  systemd.services.delugeweb.vpnConfinement = {
     enable = true;
     vpnNamespace = "wg";
   };
