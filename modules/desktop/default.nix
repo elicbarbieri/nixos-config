@@ -166,6 +166,7 @@ in
     atuin-desktop
 
     # Core GUI Apps
+    halloy
     brave
     nautilus
     pavucontrol
