@@ -70,8 +70,8 @@ let
     
     enable_audio_bell no
     
-    map ctrl+shift+plus  change_font_size all +1.0
-    map ctrl+shift+minus change_font_size all -1.0
+    map ctrl+shift+plus  change_font_size current +1.0
+    map ctrl+shift+minus change_font_size current -1.0
     
     map ctrl+left  resize_window narrower
     map ctrl+right resize_window wider
