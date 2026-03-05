@@ -51,6 +51,12 @@ in
     fsType = "ext4";
   };
 
+  # BFQ I/O scheduler for sdb (SMR HDD) — much better for mixed random read/write workloads
+  services.udev.extraRules = ''
+    ACTION=="add|change", KERNEL=="sdb", ATTR{queue/scheduler}="bfq"
+    ACTION=="add|change", KERNEL=="sdb", ATTR{bdi/read_ahead_kb}="8192"
+  '';
+
   # Enable mdadm for RAID5 array management
   boot.swraid.enable = true;
   boot.swraid.mdadmConf = ''
@@ -110,8 +116,6 @@ in
       listen_ports = [ 24403 24407 ];
       random_port = false;
       listen_interface = "0.0.0.0";
-      outgoing_ports = [ 24403 24407 ];
-      random_outgoing_ports = false;
 
       max_active_limit = -1;              # Unlimited active torrents
       max_active_downloading = 10;         # 10 downloading simultaneously
@@ -119,7 +123,7 @@ in
 
       max_connections_global = 800;        # Total connections across all torrents
       max_connections_per_torrent = 100;   # Per-torrent connection limit
-      max_upload_slots_global = -1;        # Unlimited global upload slots
+      max_upload_slots_global = 200;       # Cap to force fastest-upload algorithm to be selective
       max_upload_slots_per_torrent = 8;    # 8 upload slots per torrent
 
       # Disable unnecessary features (manual port forwarding in use)
@@ -129,6 +133,10 @@ in
       dht = true;                          # Enable DHT
       utpex = true;                        # Enable peer exchange
       lsd = true;                          # Enable Local Service Discovery
+
+      cache_size = 65536;       # 65536 * 16KiB = 1GB write buffer (smooths SMR drive writes)
+      cache_expiry = 60;
+      seed_choking_algorithm = 1;  # fastest-upload: prioritize peers we can upload to fastest
 
       enabled_plugins = [ "Label" ];
     };
@@ -155,6 +163,11 @@ in
       { port = 24407; protocol = "both"; }
     ];
   };
+
+  # vpn-confinement strips MTU from wireguard config; apply AirVPN's required 1320 after namespace setup
+  systemd.services.wg.postStart = ''
+    ${pkgs.iproute2}/bin/ip -n wg link set wg0 mtu 1320
+  '';
 
   systemd.services.deluged.vpnConfinement = {
     enable = true;
