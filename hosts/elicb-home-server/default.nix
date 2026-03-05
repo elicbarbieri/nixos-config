@@ -121,9 +121,9 @@ in
       max_active_downloading = 10;         # 10 downloading simultaneously
       max_active_seeding = -1;             # Unlimited seeding
 
-      max_connections_global = 800;        # Total connections across all torrents
+      max_connections_global = 300;        # Headroom above upload slots for peer rotation
       max_connections_per_torrent = 100;   # Per-torrent connection limit
-      max_upload_slots_global = 200;       # Cap to force fastest-upload algorithm to be selective
+      max_upload_slots_global = 100;       # Only fast peers get slots via fastest-upload algorithm
       max_upload_slots_per_torrent = 8;    # 8 upload slots per torrent
 
       # Disable unnecessary features (manual port forwarding in use)
@@ -137,6 +137,8 @@ in
       cache_size = 65536;       # 65536 * 16KiB = 1GB write buffer (smooths SMR drive writes)
       cache_expiry = 60;
       seed_choking_algorithm = 1;  # fastest-upload: prioritize peers we can upload to fastest
+      suggest_mode = 1;            # hint peers toward RAM-cached pieces, reduces disk reads on sdb
+      enable_utp = false;          # force TCP for higher raw throughput
 
       enabled_plugins = [ "Label" ];
     };
