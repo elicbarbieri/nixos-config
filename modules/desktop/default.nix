@@ -56,7 +56,7 @@ in
     NIXOS_OZONE_WL = "1";
     MOZ_ENABLE_WAYLAND = "1";
     QT_QPA_PLATFORM = "wayland";
-    GDK_BACKEND = "wayland";
+    GDK_BACKEND = "wayland,x11";
     QT_QPA_PLATFORMTHEME = "qt6ct";
     SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/gnupg/S.gpg-agent.ssh";
   };
@@ -139,6 +139,12 @@ in
     ];
   };
 
+
+  # XDG portal configuration (required for Flatpak GTK apps)
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  };
 
   # Flatpak configuration
   services.flatpak = {

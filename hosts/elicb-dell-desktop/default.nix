@@ -45,27 +45,17 @@
   };
 
   # EDID override for Sceptre F27 monitor on DP-3 (connected via DP->HDMI adapter)
-  # NOTE: drm.edid_firmware does NOT work with NVIDIA proprietary driver
-  # Using debugfs workaround via systemd service instead
-  hardware.display = {
-    edid.modelines = {
+  # Uses NixOS hardware.display module to generate EDID binary from modeline
+  hardware.display.edid = {
+    enable = true;
+    modelines = {
       # Standard 1920x1080@60Hz timing (148.5 MHz pixel clock)
       "f27-1080p60" = "148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync";
     };
-    # Don't set outputs - we'll apply EDID via debugfs instead
   };
 
-  # Systemd service to apply EDID override via debugfs (workaround for NVIDIA ignoring drm.edid_firmware)
-  systemd.services.nvidia-edid-override = {
-    description = "Apply custom EDID for Sceptre F27 monitor via debugfs";
-    wantedBy = [ "graphical.target" ];
-    after = [ "systemd-modules-load.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 2 && cat /run/current-system/firmware/edid/f27-1080p60.bin > /sys/kernel/debug/dri/1/DP-3/edid_override'";
-    };
-  };
+  # Apply EDID to DP-3 via kernel parameter (EDID binary auto-generated and installed as firmware)
+  boot.kernelParams = [ "drm.edid_firmware=DP-3:edid/f27-1080p60.bin" ];
 
   # Docker firewall configuration
   networking.firewall = {
