@@ -95,13 +95,6 @@ let
     '';
   });
 
-  # Wrap SDDM to include sddm-greeter symlink (Qt6 renamed it to sddm-greeter-qt6)
-  sddmPackage = pkgs.kdePackages.sddm.overrideAttrs (old: {
-    buildCommand = old.buildCommand + ''
-      ln -s $out/bin/sddm-greeter-qt6 $out/bin/sddm-greeter
-    '';
-  });
-
 in
 {
   # Enable SDDM with astronaut theme
@@ -109,7 +102,6 @@ in
     enable = true;
     wayland.enable = true;
     theme = "sddm-astronaut-theme";
-    package = sddmPackage;
     extraPackages = with pkgs.kdePackages; [
       qtmultimedia
       qtsvg
