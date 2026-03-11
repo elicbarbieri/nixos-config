@@ -58,7 +58,7 @@ in
     QT_QPA_PLATFORM = "wayland";
     GDK_BACKEND = "wayland,x11";
     QT_QPA_PLATFORMTHEME = "qt6ct";
-    SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/gnupg/S.gpg-agent.ssh";
+    SSH_AUTH_SOCK = "\${XDG_RUNTIME_DIR}/gnupg/S.gpg-agent.ssh";
   };
 
   # Essential desktop services
