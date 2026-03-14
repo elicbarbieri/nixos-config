@@ -39,6 +39,9 @@ in
       qtsvg
       qtvirtualkeyboard
     ];
+    # QT_QPA_PLATFORM=wayland is set globally in sessionVariables and bleeds into
+    # the greeter process. The greeter runs under X11, so force xcb here.
+    settings.General.GreeterEnvironment = "QT_QPA_PLATFORM=xcb";
   };
 
   # Install the theme package
