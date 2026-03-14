@@ -54,7 +54,7 @@ in
   # BFQ I/O scheduler for sdb (SMR HDD) — much better for mixed random read/write workloads
   services.udev.extraRules = ''
     ACTION=="add|change", KERNEL=="sdb", ATTR{queue/scheduler}="bfq"
-    ACTION=="add|change", KERNEL=="sdb", ATTR{bdi/read_ahead_kb}="8192"
+    ACTION=="add|change", KERNEL=="sdb", ATTR{queue/read_ahead_kb}="8192"
   '';
 
   # Enable mdadm for RAID5 array management
@@ -135,7 +135,8 @@ in
       lsd = true;                          # Enable Local Service Discovery
 
       cache_size = 65536;       # 65536 * 16KiB = 1GB write buffer (smooths SMR drive writes)
-      cache_expiry = 60;
+      cache_expiry = 300;
+      compact_allocation = false;  # pre-allocate full file size for contiguous layout on SMR drive
       seed_choking_algorithm = 1;  # fastest-upload: prioritize peers we can upload to fastest
       suggest_mode = 1;            # hint peers toward RAM-cached pieces, reduces disk reads on sdb
       enable_utp = false;          # force TCP for higher raw throughput
