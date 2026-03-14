@@ -49,17 +49,12 @@ in
         mkdir -p "${serverDir}"
         chown minecraft:minecraft "${serverDir}"
 
-        # Copy the modpack if not present
-        if [ ! -f "${serverDir}/local.mrpack" ]; then
-          cp "${modpackFile}" "${serverDir}/local.mrpack"
-          chown minecraft:minecraft "${serverDir}/local.mrpack"
-        fi
+        # Always copy modpack and launcher to pick up updates
+        cp "${modpackFile}" "${serverDir}/local.mrpack"
+        chown minecraft:minecraft "${serverDir}/local.mrpack"
 
-        # Copy the launcher if not present
-        if [ ! -f "${serverDir}/mrpack4server.jar" ]; then
-          cp "${mrpack4server}" "${serverDir}/mrpack4server.jar"
-          chown minecraft:minecraft "${serverDir}/mrpack4server.jar"
-        fi
+        cp "${mrpack4server}" "${serverDir}/mrpack4server.jar"
+        chown minecraft:minecraft "${serverDir}/mrpack4server.jar"
 
         # Accept EULA
         echo "eula=true" > "${serverDir}/eula.txt"
