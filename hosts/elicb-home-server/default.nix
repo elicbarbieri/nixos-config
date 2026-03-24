@@ -74,7 +74,6 @@ in
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [
-      58846         # Deluge daemon port
       27020 27021 27022  # ARK RCON ports (Island, Scorched, Aberration)
     ];
     allowedUDPPorts = [
@@ -99,88 +98,6 @@ in
     enable = true;
     openFirewall = true;  # Opens port 32400 and other Plex ports for remote access
     dataDir = "/var/lib/plex";  # Metadata, database, and transcoding cache
-  };
-
-  # Allow Plex to read media files downloaded by Deluge
-  users.users.plex.extraGroups = [ "deluge" "media" ];
-
-  services.deluge = {
-    enable = true;
-    web.enable = true;
-    declarative = true;
-    config = {
-      daemon_port = 58846;
-      allow_remote = true;
-      download_location = "/mnt/deepstor/media/downloads/";
-
-      # Port forwarding (AirVPN forwarded ports: 24403-24407)
-      listen_ports = [ 24403 24407 ];
-      random_port = false;
-      listen_interface = "0.0.0.0";
-
-      max_active_limit = -1;              # Unlimited active torrents
-      max_active_downloading = 10;         # 10 downloading simultaneously
-      max_active_seeding = -1;             # Unlimited seeding
-
-      max_connections_global = 100;        # Fewer peers — concentrate bandwidth on fast ones
-      max_connections_per_torrent = 10;    # Tight per-torrent limit forces only fast peers to hold slots
-      max_upload_slots_global = 50;        # 50 concurrent piece reads — keeps disk I/O manageable
-      max_upload_slots_per_torrent = 3;    # 3 fast peers per torrent; fastest-upload algo picks best
-
-      # Disable unnecessary features (manual port forwarding in use)
-      upnp = false;                        # Disable UPnP
-      natpmp = false;                      # Disable NAT-PMP
-
-      dht = true;                          # Enable DHT
-      utpex = true;                        # Enable peer exchange
-      lsd = true;                          # Enable Local Service Discovery
-
-      cache_size = 524288;      # 524288 * 16KiB = 8GB RAM cache — hot pieces served from RAM, not disk
-      cache_expiry = 600;       # 10 min — keep hot pieces warm longer
-      compact_allocation = false;  # pre-allocate full file size for contiguous layout on SMR drive
-      seed_choking_algorithm = 1;  # fastest-upload: prioritize peers we can upload to fastest
-      suggest_mode = 1;            # hint peers toward RAM-cached pieces, reduces disk reads on sdb
-      enable_utp = false;          # force TCP for higher raw throughput
-
-      enabled_plugins = [ "Label" ];
-    };
-    authFile = config.sops.secrets."deluge/auth".path;
-  };
-
-  # VPN-Confinement namespace for Deluge
-  vpnNamespaces.wg = {
-    enable = true;
-    wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
-    accessibleFrom = [
-      "100.64.0.0/24"   # Nebula mesh network
-      "127.0.0.1/32"    # localhost (radarr, sonarr, etc.)
-    ];
-    portMappings = [
-      { from = 58846; to = 58846; protocol = "tcp"; }
-      { from = 8112; to = 8112; protocol = "tcp"; }
-    ];
-    openVPNPorts = [
-      { port = 24403; protocol = "both"; }
-      { port = 24404; protocol = "both"; }
-      { port = 24405; protocol = "both"; }
-      { port = 24406; protocol = "both"; }
-      { port = 24407; protocol = "both"; }
-    ];
-  };
-
-  # vpn-confinement strips MTU from wireguard config; apply AirVPN's required 1320 after namespace setup
-  systemd.services.wg.postStart = ''
-    ${pkgs.iproute2}/bin/ip -n wg link set wg0 mtu 1320
-  '';
-
-  systemd.services.deluged.vpnConfinement = {
-    enable = true;
-    vpnNamespace = "wg";
-  };
-
-  systemd.services.delugeweb.vpnConfinement = {
-    enable = true;
-    vpnNamespace = "wg";
   };
 
   # Nebula lighthouse
