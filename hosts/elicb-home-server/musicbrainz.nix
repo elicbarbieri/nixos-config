@@ -612,7 +612,7 @@ EOF
       Type = "simple";
       User = "acoustid";
       Group = "acoustid";
-      ExecStart = "${acoustid-index}/bin/fpindex --dir /mnt/md0/acoustid-index --host 0.0.0.0 --port 8081";
+      ExecStart = "${acoustid-index}/bin/fpindex --dir /mnt/md0/acoustid-index --address 0.0.0.0 --port 8081";
       Restart = "always";
       RestartSec = "10s";
     };
