@@ -3,8 +3,6 @@
 { pkgs, config, lib, ... }:
 
 {
-  nixpkgs.config.cudaSupport = true;
-
   environment.systemPackages = with pkgs; [
     # CUDA development tools (needed for vLLM/FlashInfer JIT compilation)
     ninja

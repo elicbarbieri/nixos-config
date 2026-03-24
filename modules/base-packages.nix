@@ -1,7 +1,7 @@
 { pkgs, nixvim }:
 let
   # Build nixvim config
-  nvim = nixvim.legacyPackages.${pkgs.system}.makeNixvimWithModule {
+  nvim = nixvim.legacyPackages.${pkgs.stdenv.hostPlatform.system}.makeNixvimWithModule {
     inherit pkgs;
     module = import ../home/programs/nixvim;
   };
@@ -19,6 +19,7 @@ let
   cli = with pkgs; [
     # TODO: Bake in jj config w/ override
     jujutsu
+    gh
 
     carapace
     direnv

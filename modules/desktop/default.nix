@@ -5,6 +5,7 @@ let
   pinentry-rofi-themed = pkgs.writeShellScriptBin "pinentry-rofi-themed" ''
     exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
   '';
+  blender-bonsai = pkgs.callPackage ../../pkgs/blender-bonsai.nix {};
 in
 {
   imports = [
@@ -172,6 +173,7 @@ in
     atuin-desktop
 
     # Core GUI Apps
+    blender-bonsai
     halloy
     brave
     nautilus
@@ -180,6 +182,9 @@ in
     deluge
     dbeaver-bin
     telegram-desktop
+
+    # Desktop Utils
+    ffmpeg-full
 
     # Qt theming - config handled by qt6ct dotfiles
     qt6Packages.qt6ct
