@@ -147,7 +147,7 @@ let
         year, month = current.strftime("%Y"), current.strftime("%Y-%m")
         date_str = current.strftime("%Y-%m-%d")
 
-        for file_type in ["fingerprint", "track", "track_mbid"]:
+        for file_type in ["fingerprint", "track", "track_mbid", "track_fingerprint"]:
             print("{}/{}/{}/{}-{}-update.jsonl.gz".format(
                 base_url, year, month, date_str, file_type
             ))
@@ -221,6 +221,21 @@ let
         if rows: pg_flush(rows, "track_mbid", cols)
         return n
 
+    def import_track_fingerprints(path):
+        rows, n = [], 0
+        cols = ["id", "track_id", "fingerprint_id", "submission_count"]
+        with gzip.open(path, 'rt') as f:
+            for line in f:
+                if not line.strip(): continue
+                d = json.loads(line)
+                rows.append((d['id'], d['track_id'], d['fingerprint_id'], d.get('submission_count', 0)))
+                n += 1
+                if n % DB_BATCH == 0:
+                    pg_flush(rows, "track_fingerprint", cols)
+                    rows = []
+        if rows: pg_flush(rows, "track_fingerprint", cols)
+        return n
+
     def send_batch(batch):
         # Matches production UpdateRequest/Change/Insert msgpack structs exactly:
         #   UpdateRequest.changes -> "c"
@@ -254,7 +269,7 @@ let
     marker_dir.mkdir(exist_ok=True)
 
     total_days = (end_date - start_date).days + 1
-    total_tracks = total_mbids = total_fps = skipped = 0
+    total_tracks = total_mbids = total_tfps = total_fps = skipped = 0
     current_date = start_date
 
     while current_date <= end_date:
@@ -269,29 +284,32 @@ let
         print(f"[{day_num}/{total_days}] {day}", flush=True)
 
         for suffix, fn, counter in [
-            ("track",       import_tracks,       "tracks"),
-            ("track_mbid",  import_track_mbids,  "mbids"),
-            ("fingerprint", index_fingerprints,  "fps"),
+            ("track",             import_tracks,              "tracks"),
+            ("track_mbid",        import_track_mbids,         "mbids"),
+            ("track_fingerprint", import_track_fingerprints,  "tfps"),
+            ("fingerprint",       index_fingerprints,         "fps"),
         ]:
             path = data_dir / f"{day}-{suffix}-update.jsonl.gz"
             if path.exists():
                 n = fn(path)
                 print(f"  {suffix}: {n:,}", flush=True)
-                if suffix == "track":       total_tracks += n
-                elif suffix == "track_mbid": total_mbids += n
-                else:                       total_fps    += n
+                if suffix == "track":              total_tracks += n
+                elif suffix == "track_mbid":       total_mbids += n
+                elif suffix == "track_fingerprint": total_tfps += n
+                else:                              total_fps    += n
 
         (marker_dir / day).touch()
 
     cur.execute("SET session_replication_role='origin'")
     cur.execute("ANALYZE track")
     cur.execute("ANALYZE track_mbid")
+    cur.execute("ANALYZE track_fingerprint")
     conn.commit()
     cur.close()
     conn.close()
 
     print(f"\nDone. Skipped {skipped} days already imported.")
-    print(f"Tracks: {total_tracks:,}  MBIDs: {total_mbids:,}  Fingerprints: {total_fps:,}")
+    print(f"Tracks: {total_tracks:,}  MBIDs: {total_mbids:,}  TrackFPs: {total_tfps:,}  Fingerprints: {total_fps:,}")
   '';
 
   # ---------------------------------------------------------------------------
@@ -580,6 +598,15 @@ CREATE TABLE IF NOT EXISTS track_mbid (
 );
 CREATE INDEX IF NOT EXISTS track_mbid_track_idx ON track_mbid(track_id);
 CREATE INDEX IF NOT EXISTS track_mbid_mbid_idx ON track_mbid(mbid);
+
+CREATE TABLE IF NOT EXISTS track_fingerprint (
+    id INTEGER PRIMARY KEY,
+    track_id INTEGER REFERENCES track(id),
+    fingerprint_id INTEGER NOT NULL,
+    submission_count INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS track_fp_fingerprint_idx ON track_fingerprint(fingerprint_id);
+CREATE INDEX IF NOT EXISTS track_fp_track_idx ON track_fingerprint(track_id);
 
 CREATE OR REPLACE VIEW track_mbid_summary AS
 SELECT
