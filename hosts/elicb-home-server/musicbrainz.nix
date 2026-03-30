@@ -3,6 +3,9 @@
 # COMPONENTS:
 #   - MusicBrainz: PostgreSQL database with music metadata (~45 GB)
 #     Managed via official MusicBrainz Docker (database-only mirror mode)
+#   - Solr: Full-text search engine for MusicBrainz (Docker, ~60 GB indexes)
+#     Handles diacritics/Unicode matching (e.g., "Rufus Du Sol" → "RÜFÜS DU SOL")
+#   - SIR: Search Index Rebuilder — keeps Solr in sync with PG (Docker)
 #   - AcoustID: Audio fingerprint → MusicBrainz ID matching (~35 GB)
 #   - acoustid-index: Fast fingerprint search engine (HTTP API on :8081)
 #
@@ -12,19 +15,32 @@
 #      This loads into host PostgreSQL (not Docker) via docker-compose.host-db.yml override.
 #      Monitor: docker compose logs -f
 #
-#   2. AcoustID fingerprint database:
+#   2. Build Solr search indexes (first time, ~4.5 hours):
+#      $ cd /opt/musicbrainz-docker && docker compose up -d search indexer
+#      $ docker compose exec indexer python -m sir reindex
+#      Or download pre-built indexes (faster, ~60 GB download):
+#      $ docker compose exec search fetch-backup-archives
+#      $ docker compose exec search load-backup-archives
+#      $ docker compose exec search remove-backup-archives
+#
+#   3. AcoustID fingerprint database:
 #      $ sudo systemctl start acoustid-init
 #      $ journalctl -u acoustid-init -f
 #
 # ARCHITECTURE:
 #   - PostgreSQL runs natively on NixOS (not in Docker)
 #   - MusicBrainz Docker tools connect to host PostgreSQL via docker0 IP
+#   - Solr + SIR run in Docker (official MB images with schema + plugins)
 #   - Database-only mirror mode (no web server overhead)
 #   - Official MusicBrainz tooling ensures schema compatibility
 #
 # ONGOING MAINTENANCE:
 #   - MusicBrainz sync: hourly (musicbrainz-docker-replication.timer)
+#   - Solr reindex: weekly (musicbrainz-solr-reindex.timer)
 #   - AcoustID sync: daily (acoustid-sync.timer)
+#
+# SEARCH API:
+#   GET http://localhost:8983/solr/release/select?q=release:"Solace"+AND+artist:"Rufus+Du+Sol"&wt=json
 #
 # ACOUSTID LOOKUP API:
 #   POST http://localhost:8081/acoustid/_search
@@ -405,10 +421,10 @@ in
     ];
 
     settings = {
-      shared_buffers = "2GB";
-      effective_cache_size = "6GB";
-      work_mem = "256MB";
-      maintenance_work_mem = "512MB";
+      shared_buffers = "8GB";
+      effective_cache_size = "24GB";
+      work_mem = "512MB";
+      maintenance_work_mem = "1GB";
       listen_addresses = "*";
       ssl = true;
     };
@@ -516,7 +532,7 @@ EOF
         # Get host IP for Docker containers to reach host PostgreSQL
         HOST_IP=$(${pkgs.iproute2}/bin/ip -4 addr show docker0 2>/dev/null | ${pkgs.gnugrep}/bin/grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
 
-        # Compose override to route musicbrainz container to host PostgreSQL
+        # Compose override to route containers to host PostgreSQL
         # No password needed — trust auth for Docker bridge subnet
         ${pkgs.coreutils}/bin/cat > docker-compose.host-db.yml <<EOF
 services:
@@ -524,6 +540,15 @@ services:
     environment:
       - MUSICBRAINZ_POSTGRES_SERVER=$HOST_IP
       - MUSICBRAINZ_POSTGRES_READONLY_SERVER=$HOST_IP
+  search:
+    ports:
+      - "8983:8983"
+    environment:
+      - SOLR_HEAP=4g
+  indexer:
+    environment:
+      - SIR_DATABASE_URI=postgresql://musicbrainz@$HOST_IP/musicbrainz_db
+      - SIR_SOLR_URI=http://search:8983/solr
 EOF
 
         ${pkgs.coreutils}/bin/cat > .env <<EOF
@@ -563,6 +588,61 @@ EOF
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "hourly";
+      Persistent = true;
+    };
+  };
+
+  # ---------------------------------------------------------------------------
+  # Solr search (Docker containers: search + indexer/SIR)
+  # ---------------------------------------------------------------------------
+
+  # Keep Solr + SIR containers running
+  systemd.services.musicbrainz-solr = {
+    description = "MusicBrainz Solr search engine";
+    after = [ "postgresql.service" "docker.service" "musicbrainz-docker-setup.service" ];
+    requires = [ "docker.service" "musicbrainz-docker-setup.service" ];
+    wantedBy = [ "multi-user.target" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      WorkingDirectory = musicbrainzDockerRoot;
+      ExecStart = pkgs.writeShellScript "mb-solr-start" ''
+        set -e
+        cd ${musicbrainzDockerRoot}
+        ${pkgs.docker}/bin/docker compose up -d search indexer
+      '';
+      ExecStop = pkgs.writeShellScript "mb-solr-stop" ''
+        cd ${musicbrainzDockerRoot}
+        ${pkgs.docker}/bin/docker compose stop search indexer
+      '';
+    };
+  };
+
+  # Weekly Solr reindex (SIR rebuilds indexes from PG after replication)
+  # First-time: sudo systemctl start musicbrainz-solr-reindex
+  systemd.services.musicbrainz-solr-reindex = {
+    description = "MusicBrainz Solr search index rebuild";
+    after = [ "musicbrainz-solr.service" "postgresql.service" ];
+    requires = [ "musicbrainz-solr.service" "postgresql.service" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      WorkingDirectory = musicbrainzDockerRoot;
+      TimeoutStartSec = "infinity";
+      ExecStart = pkgs.writeShellScript "mb-solr-reindex" ''
+        set -e
+        cd ${musicbrainzDockerRoot}
+        ${pkgs.docker}/bin/docker compose exec -T indexer python -m sir reindex
+      '';
+    };
+  };
+
+  systemd.timers.musicbrainz-solr-reindex = {
+    description = "MusicBrainz weekly Solr reindex";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "weekly";
       Persistent = true;
     };
   };

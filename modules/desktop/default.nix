@@ -182,6 +182,7 @@ in
     deluge
     dbeaver-bin
     telegram-desktop
+    plex-desktop
 
     # Desktop Utils
     ffmpeg-full
