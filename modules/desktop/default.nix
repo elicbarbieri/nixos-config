@@ -6,6 +6,25 @@ let
     exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
   '';
   blender-bonsai = pkgs.callPackage ../../pkgs/blender-bonsai.nix {};
+
+  # Override neovim .desktop to launch inside kitty instead of relying on
+  # the launcher's default terminal (which is often xterm with tiny fonts)
+  nvim-desktop = pkgs.makeDesktopItem {
+    name = "nvim";
+    desktopName = "Neovim";
+    genericName = "Text Editor";
+    comment = "Edit text files";
+    exec = "kitty nvim %F";
+    icon = "nvim";
+    terminal = false;
+    categories = [ "Utility" "TextEditor" ];
+    mimeTypes = [
+      "text/english" "text/plain" "text/x-makefile" "text/x-c++hdr"
+      "text/x-c++src" "text/x-chdr" "text/x-csrc" "text/x-java"
+      "text/x-moc" "text/x-pascal" "text/x-tcl" "text/x-tex"
+      "application/x-shellscript" "text/x-c" "text/x-c++"
+    ];
+  };
 in
 {
   imports = [
@@ -166,7 +185,9 @@ in
     };
   };
 
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = [
+    nvim-desktop
+  ] ++ (with pkgs; [
 
     # Core HID deps
     keyd
@@ -203,7 +224,7 @@ in
     # GTK theming - config handled by gtk dotfiles
     adw-gtk3                          # Modern GTK3 theme (libadwaita port)
     adwaita-icon-theme                # Adwaita icons (required for libadwaita symbolic icons)
-  ];
+  ]);
 
   # GPG agent configuration
   programs.gnupg.agent = {
