@@ -61,7 +61,10 @@ in
   };
 
   # Host-specific services
-  virtualisation.docker.enable = true;
+  virtualisation.docker = {
+    enable = true;
+    enableOnBoot = false; # Don't block boot; starts via socket activation or when a dependent service needs it
+  };
 
   # Common services all hosts need
   services = {
