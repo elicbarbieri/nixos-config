@@ -5,7 +5,6 @@ let
   pinentry-rofi-themed = pkgs.writeShellScriptBin "pinentry-rofi-themed" ''
     exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
   '';
-  blender-bonsai = pkgs.callPackage ../../pkgs/blender-bonsai.nix {};
 
   # Override neovim .desktop to launch inside kitty instead of relying on
   # the launcher's default terminal (which is often xterm with tiny fonts)
@@ -201,7 +200,7 @@ in
     atuin-desktop
 
     # Core GUI Apps
-    blender-bonsai
+    blender
     halloy
     brave
     nautilus
