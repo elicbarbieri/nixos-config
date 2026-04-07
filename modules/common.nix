@@ -2,7 +2,8 @@
 { pkgs, nixvim, config, lib, ... }:
 
 let
-  commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim; }).common;
+  isDesktop = config.services.xserver.enable;
+  commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim isDesktop; }).common;
 in
 {
   nixpkgs.config.allowUnfree = true;

@@ -14,6 +14,7 @@
     ./plugins/utils.nix
     ./plugins/lint.nix
     ./plugins/markdown.nix
+    ./plugins/latex.nix
     ./plugins/dadbod.nix
   ];
 

@@ -1,9 +1,10 @@
-{ pkgs, nixvim }:
+{ pkgs, nixvim, isDesktop ? false }:
 let
   # Build nixvim config
   nvim = nixvim.legacyPackages.${pkgs.stdenv.hostPlatform.system}.makeNixvimWithModule {
     inherit pkgs;
     module = import ../home/programs/nixvim;
+    extraSpecialArgs = { inherit isDesktop; };
   };
 
   # Build wrapped programs with personal config bundled
