@@ -2,6 +2,10 @@
   plugins.vimtex = {
     enable = true;
 
+    # Disable vimtex's defaults — we provide our own via extraPackages
+    texlivePackage = null;
+    zathuraPackage = null;
+
     settings = {
       # Use zathura as the PDF viewer (auto-reloads, SyncTeX support)
       view_method = "zathura";
@@ -20,6 +24,7 @@
 
       # Don't open quickfix window on warnings, only on errors
       quickfix_mode = 2;
+
     };
   };
 

@@ -36,6 +36,7 @@ in
       util-linux  # provides libuuid
       expat
       libxcb  # X11 protocol (needed by OpenCV/cv2)
+      glib    # needed by PyQt6
     ];
   };
 
