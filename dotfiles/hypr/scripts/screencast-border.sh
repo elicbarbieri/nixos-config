@@ -8,13 +8,9 @@ SHARING_INACTIVE_COLOR="rgba(ff333366)"
 
 SOCKET="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
 
-ORIGINAL_ACTIVE=""
-ORIGINAL_INACTIVE=""
-
-save_colors() {
-    ORIGINAL_ACTIVE=$(hyprctl getoption general:col.active_border -j | jq -r '.str')
-    ORIGINAL_INACTIVE=$(hyprctl getoption general:col.inactive_border -j | jq -r '.str')
-}
+ORIGINAL_ACTIVE=$(hyprctl getoption general:col.active_border -j | jq -r '.str')
+ORIGINAL_INACTIVE=$(hyprctl getoption general:col.inactive_border -j | jq -r '.str')
+SHARING=0
 
 handle() {
     case $1 in
@@ -28,12 +24,14 @@ handle() {
             fi
             ;;
         screencast\>\>1,*)
-            save_colors
+            SHARING=$((SHARING + 1))
             hyprctl keyword general:col.active_border "$SHARING_ACTIVE_COLOR"
             hyprctl keyword general:col.inactive_border "$SHARING_INACTIVE_COLOR"
             ;;
         screencast\>\>0,*)
-            if [ -n "$ORIGINAL_ACTIVE" ]; then
+            SHARING=$((SHARING - 1))
+            if [ "$SHARING" -le 0 ]; then
+                SHARING=0
                 hyprctl keyword general:col.active_border "$ORIGINAL_ACTIVE"
                 hyprctl keyword general:col.inactive_border "$ORIGINAL_INACTIVE"
             fi
