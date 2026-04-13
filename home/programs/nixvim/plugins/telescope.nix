@@ -74,9 +74,17 @@
           action = "diagnostics";
           options.desc = "Diagnostics";
         };
-        "<leader>sh" = {
+        "<leader>s?" = {
           action = "help_tags";
           options.desc = "Help Pages";
+        };
+        "<leader>sh" = {
+          action = "oldfiles";
+          options.desc = "Recent (History)";
+        };
+        "<leader>sH" = {
+          action = "resume";
+          options.desc = "Resume";
         };
         "<leader>sk" = {
           action = "keymaps";
@@ -85,14 +93,6 @@
         "<leader>sm" = {
           action = "marks";
           options.desc = "Marks";
-        };
-        "<leader>sr" = {
-          action = "oldfiles";
-          options.desc = "Recent";
-        };
-        "<leader>sR" = {
-          action = "resume";
-          options.desc = "Resume";
         };
         
         # File namespace (keep for compatibility)

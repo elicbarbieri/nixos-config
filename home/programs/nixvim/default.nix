@@ -8,6 +8,9 @@
     ./plugins/cmp.nix
     ./plugins/supermaven.nix
     ./plugins/telescope.nix
+    ./plugins/grug-far.nix
+    ./plugins/noice.nix
+    ./plugins/persistence.nix
     ./plugins/treesitter.nix
     ./plugins/ui.nix
     ./plugins/git.nix

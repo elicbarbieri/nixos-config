@@ -84,17 +84,10 @@
         };
       };
       
-      # LSP UI improvements
-      fidget = {
-        enable = true;
-        settings = {
-          notification = {
-            window = {
-              winblend = 0;
-            };
-          };
-        };
-      };
+      # LSP UI improvements (fidget disabled — noice handles LSP progress)
+      # fidget = {
+      #   enable = true;
+      # };
       
       # LSP lines (show diagnostics as virtual text)
       lsp-lines.enable = true;

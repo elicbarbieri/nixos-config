@@ -328,6 +328,14 @@
         options.desc = "Close Other Tabs";
       }
 
+      # New file
+      {
+        mode = "n";
+        key = "<leader>fn";
+        action = "<cmd>enew<cr>";
+        options.desc = "New File";
+      }
+
       # Quit/Session (LazyVim <leader>q namespace)
       {
         mode = "n";

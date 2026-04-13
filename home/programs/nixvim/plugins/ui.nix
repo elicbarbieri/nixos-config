@@ -9,6 +9,7 @@
           globalstatus = true;
           disabled_filetypes = {
             statusline = ["dashboard" "alpha" "starter"];
+            winbar = ["dashboard" "alpha" "starter" "neo-tree" "toggleterm"];
           };
         };
         sections = {
@@ -18,6 +19,43 @@
           lualine_x = ["encoding" "fileformat" "filetype"];
           lualine_y = ["progress"];
           lualine_z = ["location"];
+        };
+        winbar = {
+          lualine_c = [
+            {
+              __unkeyed-1.__raw = ''
+                function()
+                  local navic = require("nvim-navic")
+                  if navic.is_available() then
+                    return navic.get_location()
+                  end
+                  return ""
+                end
+              '';
+            }
+          ];
+        };
+      };
+    };
+
+    # Breadcrumbs (code context in winbar)
+    navic = {
+      enable = true;
+      settings = {
+        lsp.auto_attach = true;
+        highlight = true;
+        separator = " > ";
+      };
+    };
+
+    # Better vim.ui.input/select
+    dressing = {
+      enable = true;
+      settings = {
+        input.enabled = true;
+        select = {
+          enabled = true;
+          backend = ["telescope" "builtin"];
         };
       };
     };
@@ -88,6 +126,10 @@
             group = "Search";
           }
           {
+            __unkeyed-1 = "<leader>sn";
+            group = "Noice";
+          }
+          {
             __unkeyed-1 = "<leader>u";
             group = "UI";
           }
@@ -123,7 +165,7 @@
     indent-blankline = {
       enable = true;
       settings = {
-        scope.enabled = true;
+        scope.enabled = false;  # Replaced by mini.indentscope
         exclude = {
           filetypes = [
             "help"
@@ -156,6 +198,10 @@
         pairs = {};
         comment = {};
         ai = {};
+        indentscope = {
+          symbol = "│";
+          options.try_as_border = true;
+        };
       };
     };
     
@@ -285,29 +331,56 @@
   
   # Keymaps for UI plugins
   keymaps = [
+    # Neo-tree
     {
       mode = "n";
       key = "<leader>e";
-      action = "<cmd>Neotree toggle<cr>";
-      options.desc = "Explorer (Root Dir)";
+      action = "<cmd>Neotree reveal<cr>";
+      options.desc = "Explorer (Reveal File)";
     }
     {
       mode = "n";
       key = "<leader>E";
       action = "<cmd>Neotree toggle<cr>";
-      options.desc = "Explorer (cwd)";
+      options.desc = "Explorer (Toggle)";
     }
     {
       mode = "n";
       key = "<leader>fe";
-      action = "<cmd>Neotree toggle<cr>";
-      options.desc = "Explorer (Root Dir)";
+      action = "<cmd>Neotree reveal<cr>";
+      options.desc = "Explorer (Reveal File)";
     }
     {
       mode = "n";
       key = "<leader>fE";
       action = "<cmd>Neotree toggle<cr>";
-      options.desc = "Explorer (cwd)";
+      options.desc = "Explorer (Toggle)";
+    }
+
+    # TODO comments
+    {
+      mode = "n";
+      key = "<leader>st";
+      action = "<cmd>TodoTelescope<cr>";
+      options.desc = "TODOs";
+    }
+    {
+      mode = "n";
+      key = "<leader>sT";
+      action = "<cmd>TodoTelescope keywords=TODO,FIX,FIXME<cr>";
+      options.desc = "TODO/FIX/FIXME";
+    }
+    {
+      mode = "n";
+      key = "]t";
+      action.__raw = ''function() require("todo-comments").jump_next() end'';
+      options.desc = "Next TODO";
+    }
+    {
+      mode = "n";
+      key = "[t";
+      action.__raw = ''function() require("todo-comments").jump_prev() end'';
+      options.desc = "Previous TODO";
     }
   ];
 }

@@ -35,5 +35,17 @@
           '';
         };
       }
+      # Disable mini.indentscope on special filetypes
+      {
+        event = ["FileType"];
+        pattern = ["help" "alpha" "dashboard" "neo-tree" "Trouble" "trouble" "lazy" "mason" "notify" "toggleterm"];
+        callback = {
+          __raw = ''
+            function()
+              vim.b.miniindentscope_disable = true
+            end
+          '';
+        };
+      }
     ];
 }
