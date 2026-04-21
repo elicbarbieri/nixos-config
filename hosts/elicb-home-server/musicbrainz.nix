@@ -553,7 +553,7 @@ EOF
 
         ${pkgs.coreutils}/bin/cat > .env <<EOF
 # Database-only mirror mode with host PostgreSQL
-COMPOSE_FILE=docker-compose.yml:docker-compose.alt.db-only-mirror.yml:docker-compose.host-db.yml
+COMPOSE_FILE=docker-compose.yml:docker-compose.alt.db-only-mirror.yml:docker-compose.host-db.yml:compose/replication-token.yml
 EOF
 
         mkdir -p local/secrets
@@ -619,7 +619,7 @@ EOF
     };
   };
 
-  # Weekly Solr reindex (SIR rebuilds indexes from PG after replication)
+  # Daily Solr reindex at 02:00 — 2 hours after midnight replication (SIR rebuilds indexes from PG)
   # First-time: sudo systemctl start musicbrainz-solr-reindex
   systemd.services.musicbrainz-solr-reindex = {
     description = "MusicBrainz Solr search index rebuild";
@@ -639,10 +639,10 @@ EOF
   };
 
   systemd.timers.musicbrainz-solr-reindex = {
-    description = "MusicBrainz weekly Solr reindex";
+    description = "MusicBrainz daily Solr reindex";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "weekly";
+      OnCalendar = "*-*-* 02:00:00";
       Persistent = true;
     };
   };
