@@ -207,12 +207,15 @@ in
     pavucontrol
     slack
     deluge
-    dbeaver-bin
     telegram-desktop
     plex-desktop
 
     # Desktop Utils
     ffmpeg-full
+
+    # GUI Dev Tools
+    tracy
+    dbeaver-bin
 
     # Qt theming - config handled by qt6ct dotfiles
     qt6Packages.qt6ct
