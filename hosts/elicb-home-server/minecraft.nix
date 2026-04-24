@@ -11,7 +11,7 @@ let
   };
 
   # Modpack file path
-  modpackFile = ../../assets/minecraft/g-chat-create-1.4.0.mrpack;
+  modpackFile = ../../assets/minecraft/g-chat-create-1.5.0.mrpack;
 in
 {
   # Java runtime for Minecraft
