@@ -208,6 +208,7 @@ in
     slack
     deluge
     telegram-desktop
+    signal-desktop
     plex-desktop
 
     # Desktop Utils
