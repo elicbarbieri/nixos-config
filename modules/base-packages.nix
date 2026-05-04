@@ -65,11 +65,13 @@ let
     # c/c++
     clang
 
-    # Kubernetes
+    # Gay Shit I dont want to use
     kubectl
     envsubst
     k9s
     kubernetes-helm
+    awscli2
+    google-cloud-sdk
 
     # nix
     nix-prefetch-github
