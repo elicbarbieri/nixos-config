@@ -49,6 +49,7 @@ let
 
     openssl
     lsof
+    postgresql
   ];
 
   # Development tools

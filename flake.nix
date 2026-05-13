@@ -53,8 +53,8 @@
     nixosConfigurations = {
       # Dell XPS 17 9730 configuration
       elicb-xps = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
         modules = [
+          { nixpkgs.hostPlatform = "x86_64-linux"; }
           ./hosts/elicb-xps
           ./modules/common.nix
           ./modules/nebula.nix
@@ -80,8 +80,8 @@
 
       # Home Server configuration
       elicb-home-server = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
         modules = [
+          { nixpkgs.hostPlatform = "x86_64-linux"; }
           ./hosts/elicb-home-server
           ./modules/common.nix
           ./modules/nebula.nix
@@ -104,8 +104,8 @@
 
       # Dell Desktop configuration - RTX 2070 Super
       elicb-dell-desktop = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
         modules = [
+          { nixpkgs.hostPlatform = "x86_64-linux"; }
           ./hosts/elicb-dell-desktop
           ./modules/common.nix
           ./modules/nebula.nix

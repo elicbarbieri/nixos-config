@@ -2,50 +2,42 @@
   plugins = {
     treesitter = {
       enable = true;
-      
-      settings = {
-        highlight.enable = true;
-        indent.enable = true;
-        
-        ensure_installed = [
-          "sql"
-        ];
-        
-        incremental_selection = {
-          enable = true;
-          keymaps = {
-            init_selection = "<C-space>";
-            node_incremental = "<C-space>";
-            scope_incremental = false;
-            node_decremental = "<bs>";
-          };
-        };
-      };
+      highlight.enable = true;
+      indent.enable = true;
     };
-    
+
     treesitter-context = {
       enable = true;
       settings = {
         max_lines = 3;
       };
     };
-    
+
     treesitter-textobjects = {
       enable = true;
-      settings = {
-        select = {
-          enable = true;
-          lookahead = true;
-          keymaps = {
-            "af" = "@function.outer";
-            "if" = "@function.inner";
-            "ac" = "@class.outer";
-            "ic" = "@class.inner";
-          };
-        };
-      };
     };
-    
+
     ts-autotag.enable = true;
   };
+
+  extraConfigLua = ''
+    do
+      local ok, ts_select = pcall(require, 'nvim-treesitter-textobjects.select')
+      if ok then
+        local maps = {
+          af = '@function.outer',
+          ['if'] = '@function.inner',
+          ac = '@class.outer',
+          ic = '@class.inner',
+        }
+        for lhs, query in pairs(maps) do
+          for _, mode in ipairs({ 'x', 'o' }) do
+            vim.keymap.set(mode, lhs, function()
+              ts_select.select_textobject(query, 'textobjects')
+            end, { silent = true, desc = 'Select ' .. query })
+          end
+        end
+      end
+    end
+  '';
 }
