@@ -44,45 +44,4 @@
     }
   ];
 
-  # Auto-configure vim-dadbod-completion source for SQL file types
-  extraConfigLua = ''
-    -- Configure vim-dadbod-completion for SQL files
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = { "sql" },
-      callback = function()
-        local cmp = require("cmp")
-        
-        -- Don't add completion to vim-dadbod-ui special buffers
-        local bufname = vim.api.nvim_buf_get_name(0)
-        if bufname:match("dbui") or bufname:match("dbout") then
-          return
-        end
-        
-        -- Setup buffer-specific completion sources for SQL files
-        cmp.setup.buffer({
-          sources = {
-            { name = "vim-dadbod-completion", priority = 1000 },  -- Highest priority for DB completion
-            { name = "nvim_lsp" },
-            { name = "luasnip" },
-            { name = "buffer" },
-            { name = "path" },
-          },
-        })
-      end,
-    })
-    
-    -- Disable auto-completion in vim-dadbod-ui buffers
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = { "dbui", "dbout" },
-      callback = function()
-        local cmp = require("cmp")
-        -- Only trigger completion manually with <C-Space> in UI buffers
-        cmp.setup.buffer({
-          completion = {
-            autocomplete = false
-          }
-        })
-      end,
-    })
-  '';
 }
