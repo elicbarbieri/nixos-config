@@ -57,6 +57,9 @@ let
     uv
     rustc
     cargo
+    clippy
+    rustfmt
+    rust-analyzer
     gcc
     nodejs
     python3
