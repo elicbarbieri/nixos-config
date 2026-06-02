@@ -1,5 +1,5 @@
 # Home Server Configuration
-{ config, pkgs, nixvim, simplex-chat, ... }:
+{ config, pkgs, lib, nixvim, simplex-chat, ... }:
 
 let
   base-packages = import ../../modules/base-packages.nix { inherit pkgs nixvim; };
@@ -98,6 +98,15 @@ in
     enable = true;
     openFirewall = true;  # Opens port 32400 and other Plex ports for remote access
     dataDir = "/var/lib/plex";  # Metadata, database, and transcoding cache
+  };
+
+  # PrivateTmp isolates /tmp from child processes — EAE watchfolder fails without a stable path
+  systemd.services.plex.serviceConfig.PrivateTmp = lib.mkForce false;
+  systemd.tmpfiles.rules = [
+    "d /var/lib/plex/tmp 0755 plex plex -"
+  ];
+  systemd.services.plex.environment = {
+    TMPDIR = "/var/lib/plex/tmp";
   };
 
   # Nebula lighthouse
