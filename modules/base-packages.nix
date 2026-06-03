@@ -1,8 +1,9 @@
 { pkgs, nixvim, isDesktop ? false }:
 let
   # Build nixvim config
+  # Use nixvim's own pinned nixpkgs (don't pass `pkgs`) so we hit the
+  # nix-community Cachix instead of rebuilding plugins from source.
   nvim = nixvim.legacyPackages.${pkgs.stdenv.hostPlatform.system}.makeNixvimWithModule {
-    inherit pkgs;
     module = import ../home/programs/nixvim;
     extraSpecialArgs = { inherit isDesktop; };
   };
@@ -71,6 +72,7 @@ let
 
     # Gay Shit I dont want to use
     kubectl
+    kubectl-neat
     envsubst
     k9s
     kubernetes-helm
