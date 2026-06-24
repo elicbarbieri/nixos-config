@@ -77,6 +77,13 @@ in
     enableOnBoot = false; # Don't block boot; starts via socket activation or when a dependent service needs it
   };
 
+  # libvirt for VMs and crc (local OpenShift cluster)
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu.swtpm.enable = true;
+  };
+  programs.virt-manager.enable = true;
+
   # Common services all hosts need
   services = {
     openssh.enable = true;

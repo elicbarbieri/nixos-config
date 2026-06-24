@@ -62,7 +62,7 @@
   };
 
   # Additional groups for this host (base groups are in common.nix)
-  users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "keyd" "wireshark" ];
+  users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "keyd" "wireshark" "libvirtd" ];
 
   users.groups.keyd = {};
 
