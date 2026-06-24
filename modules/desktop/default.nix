@@ -210,6 +210,7 @@ in
     telegram-desktop
     signal-desktop
     plex-desktop
+    mpv
 
     # Desktop Utils
     ffmpeg-full
