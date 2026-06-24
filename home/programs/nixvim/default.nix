@@ -28,6 +28,7 @@
     sqlfluff
     nixpkgs-fmt
     shfmt
+    prettier  # YAML/JSON/JS/TS formatter
 
     # Add database tools needed by vim-dadbod
     postgresql  # Provides psql executable
