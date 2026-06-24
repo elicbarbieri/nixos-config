@@ -35,6 +35,18 @@ $env.config.keybindings = [
         }
     }
     
+    # Quick file finder with fzf
+    {
+        name: file_finder
+        modifier: control
+        keycode: char_f
+        mode: emacs
+        event: {
+            send: executehostcommand
+            cmd: "commandline edit --insert (fd . -t f | fzf --height=50% --preview '^bat --color=always {}' | str trim)"
+        }
+    }
+
     # Open current directory in file manager
     {
         name: open_in_explorer
