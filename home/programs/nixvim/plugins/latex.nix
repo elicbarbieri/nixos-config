@@ -16,7 +16,7 @@
       # latexmk args: continuous mode with synctex enabled
       compiler_latexmk = {
         options = [
-          "-pdf"
+          "-xelatex"
           "-interaction=nonstopmode"
           "-synctex=1"
         ];
@@ -35,7 +35,7 @@
       texlab = {
         build = {
           executable = "latexmk";
-          args = [ "-pdf" "-interaction=nonstopmode" "-synctex=1" "%f" ];
+          args = [ "-xelatex" "-interaction=nonstopmode" "-synctex=1" "%f" ];
           onSave = true;
         };
         forwardSearch = {
