@@ -51,6 +51,9 @@
           
           # Bash
           bashls.enable = true;
+
+          # C/C++
+          clangd.enable = true;
         };
       };
       
