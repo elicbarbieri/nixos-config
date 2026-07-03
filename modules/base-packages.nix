@@ -53,8 +53,9 @@ let
     postgresql
   ];
 
-  # Development tools
+  # Language toolchains and Nix tooling (all hosts)
   dev = with pkgs; [
+    # Language toolchains
     uv
     rustc
     cargo
@@ -62,34 +63,37 @@ let
     rustfmt
     rust-analyzer
     gcc
+    clang
     nodejs
     python3
     bun
     go
 
-    # c/c++
-    clang
-
-    # Gay Shit I dont want to use
-    kubectl
-    kubectl-neat
-    envsubst
-    k9s
-    kubernetes-helm
-    awscli2
-    google-cloud-sdk
-
-    # nix
+    # Nix tooling
     nix-prefetch-github
     nixos-anywhere
     cachix
     disko
   ];
 
+  # Cloud / Kubernetes tooling (desktop hosts only — not needed headless)
+  cloud = with pkgs; [
+    kubectl
+    kubectl-neat
+    k9s
+    kubernetes-helm
+    envsubst
+    awscli2
+    google-cloud-sdk
+  ];
+
 in
 {
-  inherit cli dev;
+  inherit cli dev cloud;
 
   # Combined list for convenience
-  common = cli ++ dev ++ [ nvim git nu starship atuin bat kitty zellij ];
+  common =
+    cli ++ dev
+    ++ pkgs.lib.optionals isDesktop cloud
+    ++ [ nvim git nu starship atuin bat kitty zellij ];
 }

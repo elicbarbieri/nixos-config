@@ -138,7 +138,6 @@ in
   systemd.sleep.settings.Sleep = {
     SuspendState = "mem";
     HibernateMode = "shutdown";
-    SleepOperation = "suspend";
   };
 
   # Hardware support

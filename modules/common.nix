@@ -55,8 +55,22 @@ in
     # and nushell (see dotfiles/nushell/env.nu)
   };
 
+  # Keep the store from growing unbounded: collect old generations weekly and
+  # hardlink-deduplicate the store after each build.
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+  nix.optimise.automatic = true;
+
+  # Drop the generated HTML/NixOS manual from the system closure (man pages and
+  # other docs are unaffected).
+  documentation.nixos.enable = false;
+
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
+    max-jobs = "auto";
     substituters = [
       "https://hyprland.cachix.org"
       "https://nix-community.cachix.org"
@@ -116,8 +130,15 @@ in
     consoleMode = "auto";
   };
 
+  # Shorten the systemd-boot menu wait (was defaulting to 5s). Hold a key at
+  # boot to interrupt and pick an older generation.
+  boot.loader.timeout = 1;
+
   system.nixos.label = "";  # Disables the majority of the machine/os ID in the systemd boot entries
 
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # Periodic SSD TRIM (weekly) — keeps NVMe write performance from degrading.
+  services.fstrim.enable = true;
 
 }

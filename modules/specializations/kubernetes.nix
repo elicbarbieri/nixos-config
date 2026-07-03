@@ -35,6 +35,10 @@ in
 {
   environment.systemPackages = [ crcWithLibvirt ];
 
+  # GPU access for host containers — only pulled in for cluster-dev work so the
+  # cdi-generator boot service doesn't gate multi-user.target on the default boot.
+  hardware.nvidia-container-toolkit.enable = true;
+
   users.groups.libvirt = { };
   users.users.elicb.extraGroups = [ "libvirt" ];
 

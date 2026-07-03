@@ -34,14 +34,16 @@ in
   services.displayManager.sddm = {
     enable = true;
     theme = "sddm-astronaut-theme";
+    # Run the greeter under Wayland. The session (Hyprland) is Wayland, so an
+    # X11 greeter forced a full Xorg spin-up + X->Wayland VT handoff that left a
+    # frozen greeter frame on screen for ~6s after the password was accepted. A
+    # Wayland greeter makes the handoff Wayland->Wayland (no stale frame, no Xorg).
+    wayland.enable = true;
     extraPackages = with pkgs.kdePackages; [
       qtmultimedia
       qtsvg
       qtvirtualkeyboard
     ];
-    # QT_QPA_PLATFORM=wayland is set globally in sessionVariables and bleeds into
-    # the greeter process. The greeter runs under X11, so force xcb here.
-    settings.General.GreeterEnvironment = "QT_QPA_PLATFORM=xcb";
   };
 
   # Install the theme package
