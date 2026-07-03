@@ -34,6 +34,11 @@ in
         "100.64.0.1"
       ];
 
+      # Relay node-to-node traffic through the lighthouse when two NATed peers on different subnets can't hole-punch directly
+      relays = lib.mkIf (!config.nebula.isLighthouse) [
+        "100.64.0.1"
+      ];
+
       listen = {
         port = if config.nebula.isLighthouse then 4242 else 0;
       };
