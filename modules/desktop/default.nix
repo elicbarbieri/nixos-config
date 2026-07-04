@@ -188,7 +188,6 @@ in
   ] ++ (with pkgs; [
 
     # Core HID deps
-    keyd
     keymapp  # ZSA keyboard configurator and flashing tool
     pinentry-rofi-themed
     brightnessctl

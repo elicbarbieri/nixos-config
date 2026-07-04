@@ -107,6 +107,7 @@
   # keyboards are left untouched, so no laptop-vs-external auto-detection is
   # needed. Confirm the id with `sudo keyd monitor` if a rebuild ever loses the
   # remap. See dotfiles/keyd-laptop/default.conf for the Colemak + nav layout.
+  services.keyd.enable = true;
   services.keyd.keyboards.internal = {
     ids = [ "0001:0001" ];
     extraConfig = builtins.readFile ../../dotfiles/keyd-laptop/default.conf;
