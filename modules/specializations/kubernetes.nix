@@ -33,6 +33,8 @@ let
   };
 in
 {
+  imports = [ ./crc-nebula-exposure.nix ];
+
   environment.systemPackages = [ crcWithLibvirt ];
 
   # GPU access for host containers — only pulled in for cluster-dev work so the
