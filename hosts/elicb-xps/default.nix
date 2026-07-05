@@ -176,10 +176,13 @@
       };
     };
 
+    # Laptop is a mesh CLIENT of the CRC cluster (which runs on the desktop), not
+    # a CRC host: pull in the Nebula client (split-DNS + registry trust), not the
+    # desktop's `specializations/kubernetes.nix` (crc/libvirt host config).
     kubernetes = {
       inheritParentConfig = true;
       configuration = {
-        imports = [ ../../modules/specializations/kubernetes.nix ];
+        imports = [ ../../modules/crc-nebula-client.nix ];
       };
     };
   };
