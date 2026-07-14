@@ -130,9 +130,7 @@ in
     consoleMode = "auto";
   };
 
-  # Shorten the systemd-boot menu wait (was defaulting to 5s). Hold a key at
-  # boot to interrupt and pick an older generation.
-  boot.loader.timeout = 1;
+  boot.loader.timeout = 5;  # 5 second grub menu
 
   system.nixos.label = "";  # Disables the majority of the machine/os ID in the systemd boot entries
 

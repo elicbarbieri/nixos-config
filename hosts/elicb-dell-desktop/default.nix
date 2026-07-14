@@ -24,6 +24,11 @@
   # Ax-shell: only show bar on primary monitor (DP-1)
   programs.ax-shell.selectedMonitors = [ "DP-1" ];
 
+  # Desktop never idles — disable the Hyprland idle daemon entirely
+  # (no auto-lock, no DPMS-off, no brightness dimming). Defined in
+  # modules/desktop/default.nix; forced off here for this host.
+  systemd.user.services.hypridle.enable = lib.mkForce false;
+
   # NVIDIA dedicated GPU configuration (no PRIME needed)
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia-container-toolkit.enable = true;
