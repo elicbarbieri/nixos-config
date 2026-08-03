@@ -22,6 +22,7 @@ let
     # TODO: Bake in jj config w/ override
     jujutsu
     gh
+    knope
 
     carapace
     direnv

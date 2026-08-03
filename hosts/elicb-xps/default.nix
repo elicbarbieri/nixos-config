@@ -92,10 +92,18 @@
   # Host-specific configuration only
   networking.hostName = "elicb-xps";
 
+  # Tailscale mesh VPN. The service brings up tailscaled and opens the WireGuard
+  # UDP port; authenticate once with `sudo tailscale up` (browser login). The
+  # tailscale0 interface is trusted so tailnet peers can reach host services.
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
+
   # Allow containers to access host services
   networking.firewall = {
     enable = true;
-    trustedInterfaces = [ "docker0" "br-+" ]; # Docker bridge interfaces
+    trustedInterfaces = [ "docker0" "br-+" "tailscale0" ]; # Docker bridge + tailnet interfaces
   };
 
   # Additional groups for this host (base groups are in common.nix)

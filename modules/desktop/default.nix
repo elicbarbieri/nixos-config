@@ -41,9 +41,6 @@ in
     # Disable GTK management - we handle it ourselves with matugen
     enableGtk = false;
 
-    # Keybinds managed manually in dotfiles (see ax-shell-module/README.md)
-    keybinds.mode = "disabled";
-
     # Matugen templates for rofi, GTK, and Kvantum theming
     matugen.config = ''
       [templates.rofi]
