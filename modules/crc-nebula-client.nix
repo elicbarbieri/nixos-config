@@ -17,13 +17,21 @@ let
   registryHost = "default-route-openshift-image-registry.apps-crc.testing";
 in
 {
-  # `address=` synthesizes the A record locally: the Nebula DNAT forwards only
-  # 6443/80/443, so there is no resolver at the Nebula IP to `server=`-forward to.
-  networking.networkmanager.dns = "dnsmasq";
-  environment.etc."NetworkManager/dnsmasq.d/crc-nebula-client.conf".text = ''
-    address=/crc.testing/${crcNebulaIp}
-    address=/apps-crc.testing/${crcNebulaIp}
-  '';
+  # Cloaking synthesizes the A record locally: the Nebula DNAT forwards only
+  # 6443/80/443, so there is no resolver at the Nebula IP to forward queries to.
+  # This runs through dnscrypt-proxy (see modules/dns.nix) rather than a
+  # NetworkManager dnsmasq backend, so the split-horizon answers and the
+  # encrypted upstream come from a single resolver instead of a chain.
+  #
+  # Both the bare domain and the wildcard are listed: a cloaking wildcard covers
+  # subdomains only, whereas dnsmasq's `address=/crc.testing/` also matched the
+  # apex.
+  dns.cloakingRules = [
+    "crc.testing ${crcNebulaIp}"
+    "*.crc.testing ${crcNebulaIp}"
+    "apps-crc.testing ${crcNebulaIp}"
+    "*.apps-crc.testing ${crcNebulaIp}"
+  ];
 
   # The registry Route serves a cert from the cluster ingress CA, which the host
   # Docker daemon doesn't trust. Over the already-encrypted mesh, allow it as an

@@ -47,14 +47,14 @@ in
   # CRC needs virtiofsd to share a host directory into the VM
   virtualisation.libvirtd.qemu.vhostUserPackages = [ pkgs.virtiofsd ];
 
-  # dnsmasq so split-DNS for *.crc.testing and *.apps-crc.testing resolves to the CRC VM.
-  networking.networkmanager.dns = "dnsmasq";
-
-  # NetworkManager has no native option for dnsmasq.d entries, so we write the split-DNS.  CRC in system mode is always .11
-  environment.etc."NetworkManager/dnsmasq.d/crc.conf".text = ''
-    server=/apps-crc.testing/192.168.130.11
-    server=/crc.testing/192.168.130.11
-  '';
+  # Split-DNS for *.crc.testing and *.apps-crc.testing, forwarded to the
+  # resolver the CRC VM runs itself (system mode is always .11). This goes
+  # through dnscrypt-proxy (see modules/dns.nix) instead of a NetworkManager
+  # dnsmasq backend, so the encrypted upstream is not bypassed.
+  dns.forwardingRules = [
+    "crc.testing 192.168.130.11"
+    "apps-crc.testing 192.168.130.11"
+  ];
 
   # CRC's post-start runs the setuid `crc-admin-helper` to sync cluster hostnames
   # (api.crc.testing, console-openshift-console.apps-crc.testing, ...) into /etc/hosts

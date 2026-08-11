@@ -84,8 +84,11 @@ let
     k9s
     kubernetes-helm
     envsubst
+
+    # HyperScaler CLI
     awscli2
     google-cloud-sdk
+    wrangler
   ];
 
 in

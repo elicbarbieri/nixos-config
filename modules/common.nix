@@ -6,6 +6,10 @@ let
   commonPkgs = (import ./base-packages.nix { inherit pkgs nixvim isDesktop; }).common;
 in
 {
+  imports = [
+    ./dns.nix
+  ];
+
   nixpkgs.config.allowUnfree = true;
 
   time.timeZone = "America/Los_Angeles";
