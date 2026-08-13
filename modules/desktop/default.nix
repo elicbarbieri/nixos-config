@@ -200,7 +200,6 @@ in
     brave
     nautilus
     pavucontrol
-    slack
     deluge
     telegram-desktop
     signal-desktop

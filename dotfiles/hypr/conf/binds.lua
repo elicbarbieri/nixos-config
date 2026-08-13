@@ -33,9 +33,7 @@ hl.bind(mod .. " + SHIFT + E",      exec("uwsm-app kitty -1 -e yazi"))
 hl.bind(mod .. " + W",              exec("uwsm app -- " .. browser))
 hl.bind(mod .. " + SHIFT + W",      exec("uwsm app -- " .. browser .. " --private-window"))
 hl.bind(mod .. " + M",              exec("uwsm app -- flatpak run com.spotify.Client"))
-hl.bind(mod .. " + K",              exec("uwsm app -- slack"))
 hl.bind(mod .. " + I",              exec("uwsm app -- " .. browser .. " --app=https://app.super-productivity.com --disable-web-security --disable-features=VizDisplayCompositor"))
-hl.bind(mod .. " + E",              exec("uwsm app -- " .. browser .. " --app=https://notion.so --disable-web-security --disable-features=VizDisplayCompositor"))
 
 -- keyd toggle
 hl.bind(mod .. " + slash", exec("keyd-toggle"))
