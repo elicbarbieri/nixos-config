@@ -105,8 +105,19 @@ in
   # Common services all hosts need
   services = {
     openssh.enable = true;
-    printing.enable = true;
+    printing = {
+      enable = true;
+      drivers = lib.optionals isDesktop [ pkgs.canon-cups-ufr2 ];
+    };
     power-profiles-daemon.enable = true;
+
+    # discovery printer services on LAN
+    avahi = {
+      enable = isDesktop;
+      nssmdns4 = true;
+      openFirewall = true;
+      publish.enable = false;
+    };
   };
 
   # Enable wireshark for packet capture capabilities (needed for arp-scan, etc)

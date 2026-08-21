@@ -88,7 +88,8 @@ let
     # HyperScaler CLI
     awscli2
     google-cloud-sdk
-    wrangler
+    wrangler   # Workers/Pages/KV/R2 — note: does NOT manage DNS records
+    flarectl   # Cloudflare zone + DNS record management (what wrangler lacks)
   ];
 
 in

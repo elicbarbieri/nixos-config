@@ -109,6 +109,23 @@
   # Additional groups for this host (base groups are in common.nix)
   users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "wireshark" "libvirtd" ];
 
+  hardware.printers = {
+    ensureDefaultPrinter = "Canon_LBP646C_UFR2";
+    ensurePrinters = [
+      {
+        name = "Canon_LBP646C_UFR2";
+        description = "Canon LBP646C UFR II";
+        location = "LAN (mDNS: Canon29b831.local)";
+        deviceUri = "socket://Canon29b831.local:9100";
+        model = "CNRCUPSLBP646CZS.ppd";
+        ppdOptions = {
+          Resolution = "1200";
+          PageSize = "Letter";
+        };
+      }
+    ];
+  };
+
   # keyd runs as a supervised root systemd service (Restart=always), so a glitch
   # self-heals instead of needing a manual kill/restart. It only grabs the
   # internal keyboard (0001:0001 = "AT Translated Set 2 keyboard"); external/ZSA
@@ -171,14 +188,14 @@
       inheritParentConfig = true;
       configuration = {
         imports = [ ../../modules/specializations/gaming.nix ];
-        
+
         # XPS-specific: Force PRIME sync mode for maximum gaming performance
         hardware.nvidia.prime = {
           offload.enable = lib.mkForce false;
           offload.enableOffloadCmd = lib.mkForce false;
           sync.enable = lib.mkForce true;
         };
-        
+
         # XPS-specific: Disable Intel display power saving for performance
         boot.kernelParams = [ "i915.enable_dc=0" ];
       };
