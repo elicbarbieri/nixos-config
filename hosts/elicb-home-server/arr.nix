@@ -130,7 +130,7 @@
     enable = true;
     wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
     accessibleFrom = [
-      "100.64.0.0/24"   # Nebula mesh network
+      "10.99.0.0/24"    # Nebula mesh network
       "127.0.0.1/32"    # localhost (radarr, sonarr, etc.)
     ];
     portMappings = [

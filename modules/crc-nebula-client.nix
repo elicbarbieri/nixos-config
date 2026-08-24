@@ -13,7 +13,7 @@
 { lib, ... }:
 
 let
-  crcNebulaIp = "100.64.0.3"; # elicb-dell-desktop on the mesh
+  crcNebulaIp = "10.99.0.3"; # elicb-dell-desktop on the mesh
   registryHost = "default-route-openshift-image-registry.apps-crc.testing";
 in
 {

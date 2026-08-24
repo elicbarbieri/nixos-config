@@ -10,7 +10,7 @@ in
     cloakingRules = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      example = [ "*.crc.testing 100.64.0.3" ];
+      example = [ "*.crc.testing 10.99.0.3" ];
       description = ''
         Lines for dnscrypt-proxy's cloaking-rules file, which returns a fixed
         address for a name (the equivalent of dnsmasq's `address=/name/ip`).
