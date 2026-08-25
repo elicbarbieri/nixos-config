@@ -14,6 +14,9 @@ in
     ./musicbrainz.nix
     ./immich.nix
     ./simplex.nix
+    ./nym.nix
+    ./ddns.nix
+    ./reverse-proxy.nix
   ];
 
   # sops-nix configuration
@@ -32,11 +35,35 @@ in
       };
       "ark/admin-password" = {};
       "ark/server-password" = {};
+      # Cloudflare API token, scoped to Zone:Read + DNS:Edit on barbieri.world.
+      # Consumed twice: raw by cloudflare-dyndns, and via the sops template
+      # below by ACME's DNS-01 challenge (lego wants it as an env var).
+      "cloudflare/api-token" = {
+        restartUnits = [ "cloudflare-dyndns.service" ];
+      };
       "nebula/ca-crt" = { owner = "nebula-mesh"; };
       "nebula/host-crt" = { owner = "nebula-mesh"; };
       "nebula/host-key" = { owner = "nebula-mesh"; };
+
+      # The node's ed25519 bonding identity, base64-encoded (nym-node writes
+      # PEM with CRLF, which YAML block scalars would silently normalise and
+      # corrupt). Held here so a rebuilt host recovers its bond rather than
+      # coming up as an unbonded stranger.
+      "nym/identity-key-b64" = {
+        owner = "nym-node";
+        mode = "0400";
+        restartUnits = [ "nym-node.service" ];
+      };
+      "nym/identity-key-pub-b64" = {
+        owner = "nym-node";
+        mode = "0400";
+        restartUnits = [ "nym-node.service" ];
+      };
     };
 
+    templates."acme-cloudflare.env".content = ''
+      CLOUDFLARE_DNS_API_TOKEN=${config.sops.placeholder."cloudflare/api-token"}
+    '';
   };
 
   # UUID: b0de9c80:a5ac423d:61f20052:ba33e57e (RAID array UUID)
@@ -70,9 +97,18 @@ in
 
   networking.hostName = "elicb-home-server";
 
+  # Tailscale mesh VPN. Authenticate once with `sudo tailscale up`. The admin
+  # web UIs (arr stack, Homarr, Deluge) are reachable over the tailnet, which is
+  # why none of them get a public DNS record in reverse-proxy.nix.
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
+
   # Firewall configuration
   networking.firewall = {
     enable = true;
+    trustedInterfaces = [ "tailscale0" ];
     allowedTCPPorts = [
       27020 27021 27022  # ARK RCON ports (Island, Scorched, Aberration)
     ];
