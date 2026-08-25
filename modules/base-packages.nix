@@ -100,5 +100,5 @@ in
   common =
     cli ++ dev
     ++ pkgs.lib.optionals isDesktop cloud
-    ++ [ nvim git nu starship atuin bat kitty zellij ];
+    ++ [ nvim git nu starship atuin bat kitty zellij pkgs.kitty.terminfo ];
 }
