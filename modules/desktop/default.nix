@@ -118,6 +118,14 @@ in
     dbus.enable = true;
     udisks2.enable = true;
 
+    # resolves the Canon's .local name for CUPS (socket://Canon29b831.local:9100)
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+      publish.enable = false;
+    };
+
     # Secrets management - required by GUI apps like atuin-desktop
     gnome.gnome-keyring.enable = true;
 
@@ -130,6 +138,13 @@ in
       };
     };
 
+  };
+
+  # nixpkgs#554650: sandbox drops CAP_DAC_OVERRIDE → stale pid unremovable → every later start EEXIST
+  # `+` = ExecStartPre outside sandbox, Restart= = upstream default dropped by the nixpkgs module
+  systemd.services.avahi-daemon.serviceConfig = {
+    ExecStartPre = "+${pkgs.coreutils}/bin/rm -f /run/avahi-daemon/pid";
+    Restart = "on-failure";
   };
 
   systemd.sleep.settings.Sleep = {

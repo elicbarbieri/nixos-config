@@ -312,6 +312,7 @@ in
       services.nym-node-ip-sync = lib.mkIf (cfg.publicIps == [ ]) {
         description = "Restart nym-node when this host's public IP changes";
         after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
         serviceConfig = {
           Type = "oneshot";
           ExecStart = ipSync;

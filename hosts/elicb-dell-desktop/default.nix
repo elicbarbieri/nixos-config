@@ -82,13 +82,5 @@
         imports = [ ../../modules/specializations/gaming.nix ];
       };
     };
-
-    # CRC / OpenShift Local (OKD) — boot into this to run crc
-    kubernetes = {
-      inheritParentConfig = true;
-      configuration = {
-        imports = [ ../../modules/specializations/kubernetes.nix ];
-      };
-    };
   };
 }
