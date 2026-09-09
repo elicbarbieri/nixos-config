@@ -90,18 +90,25 @@
 
   users.users.elicb.extraGroups = [ "docker" "video" "render" "audio" "wireshark" "libvirtd" ];
 
+  # LAN drops multicast -> discovers nothing, but still resurrects deleted queues (implicitclass://)
+  services.printing.browsed.enable = false;
+
   hardware.printers = {
     ensureDefaultPrinter = "Canon_LBP646C_UFR2";
     ensurePrinters = [
       {
         name = "Canon_LBP646C_UFR2";
         description = "Canon LBP646C UFR II";
-        location = "LAN (mDNS: Canon29b831.local)";
-        deviceUri = "socket://Canon29b831.local:9100";
+        location = "LAN (static on printer: 172.16.100.163, 20:0b:74:b1:ee:b5)";
+        # IP, never .local (AP drops multicast -> mDNS dead here; unicast fine, so pin the address)
+        deviceUri = "socket://172.16.100.163:9100";
         model = "CNRCUPSLBP646CZS.ppd";
         ppdOptions = {
+          # 1200 only via UFR2 (IPP driverless caps at 300 = printer-resolution-supported)
           Resolution = "1200";
           PageSize = "Letter";
+          CNColorMode = "color"; # Auto = per-page mono fallback
+          CNTonerSaving = "False"; # Auto (= PPD default) still throttles
         };
       }
     ];

@@ -118,7 +118,7 @@ in
     dbus.enable = true;
     udisks2.enable = true;
 
-    # resolves the Canon's .local name for CUPS (socket://Canon29b831.local:9100)
+    # general service discovery only (printing uses a literal IP - LAN drops multicast, mDNS unusable)
     avahi = {
       enable = true;
       nssmdns4 = true;

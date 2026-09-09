@@ -97,6 +97,8 @@ in
     printing = {
       enable = true;
       drivers = lib.optionals isDesktop [ pkgs.canon-cups-ufr2 ];
+      # 90pg @1200dpi = ~2.5min, so 30min = dead backend (default 10800 hid one for 3h)
+      extraConf = "MaxJobTime 1800";
     };
     power-profiles-daemon.enable = true;
   };
