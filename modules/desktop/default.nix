@@ -209,34 +209,34 @@ in
     seahorse
     atuin-desktop
 
-    # Core GUI Apps
-    blender
+    # Core GUI Apps (fast-moving: protocol/security churn)
     halloy
     brave
-    nautilus
     pavucontrol
-    deluge
     telegram-desktop
     signal-desktop
-    plex-desktop
     mpv
 
-    # Desktop Utils
+    # Qt theming - config handled by qt6ct dotfiles
+    # - plugins load into every Qt app's process → must share the apps' Qt (unstable)
+    qt6Packages.qt6ct
+    libsForQt5.qtstyleplugin-kvantum  # Qt5 Kvantum support
+    kdePackages.qtstyleplugin-kvantum # Qt6 Kvantum support
+  ]) ++ (with pkgs.stable; [
+    # Heavy GUI apps
+    blender
+    nautilus
+    deluge
+    plex-desktop
     ffmpeg-full
 
     # GUI Dev Tools
     tracy
-    dbeaver-bin
 
-    # Qt theming - config handled by qt6ct dotfiles
-    qt6Packages.qt6ct
-    libsForQt5.qtstyleplugin-kvantum  # Qt5 Kvantum support
-    kdePackages.qtstyleplugin-kvantum # Qt6 Kvantum support
-    catppuccin-kvantum                # Catppuccin Kvantum theme
-
-    # GTK theming - config handled by gtk dotfiles
-    adw-gtk3                          # Modern GTK3 theme (libadwaita port)
-    adwaita-icon-theme                # Adwaita icons (required for libadwaita symbolic icons)
+    # Theme data (no linked libs → channel-agnostic)
+    catppuccin-kvantum
+    adw-gtk3
+    adwaita-icon-theme  # libadwaita symbolic icons
   ]);
 
   # GPG agent configuration
@@ -247,7 +247,7 @@ in
   };
 
   # Fonts for Ax-Shell and system
-  fonts.packages = with pkgs; [
+  fonts.packages = with pkgs.stable; [
     nerd-fonts.jetbrains-mono
     noto-fonts-color-emoji
     nerd-fonts.symbols-only

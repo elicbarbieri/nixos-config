@@ -1,10 +1,8 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    # Stable pin used ONLY for the CUDA dev shell. Stable point-releases move
-    # slowly (backports/security), so the multi-gig CUDA closure stays cache-hot
-    # and doesn't churn every time unstable bumps gcc/glibc/cuda. Intentionally
-    # not `follows`-ed — the whole point is an independent, slow-moving pin.
+    # → pkgs.stable: heavy GUI/data pkgs + CUDA shell (no churn on unstable gcc/glibc bumps)
+    # - no `follows` (independent slow-moving pin = the point)
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
@@ -27,15 +25,18 @@
   outputs = { self, nixpkgs, nixpkgs-stable, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, ... }:
   let
     system = "x86_64-linux";
+    stableOverlay = _: _: {
+      stable = import nixpkgs-stable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+    };
     pkgs = import nixpkgs {
       inherit system;
       config.allowUnfree = true;
+      overlays = [ stableOverlay ];
     };
-    # Stable nixpkgs, used only for the CUDA dev shell (see nixpkgs-stable input).
-    pkgsStable = import nixpkgs-stable {
-      inherit system;
-      config.allowUnfree = true;
-    };
+    pkgsStable = pkgs.stable;
 
     # Build a NixOS host from a host module plus profile-specific extras,
     # factoring out the wiring shared by every machine (common config, disko,
@@ -44,7 +45,10 @@
       nixpkgs.lib.nixosSystem {
         specialArgs = { inherit hyprland self ax-shell nixvim sops-nix; };
         modules = [
-          { nixpkgs.hostPlatform = system; }
+          {
+            nixpkgs.hostPlatform = system;
+            nixpkgs.overlays = [ stableOverlay ];
+          }
           host
           ./modules/common.nix
           ./modules/nebula.nix

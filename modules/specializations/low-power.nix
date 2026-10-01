@@ -79,15 +79,9 @@
     options nvidia NVreg_DynamicPowerManagement=0x02
   '';
 
-  # Reduce system services for power saving
-  services = {
-    # Disable unnecessary services
-    
-    # Reduce log retention
-    journald.extraConfig = ''
-      SystemMaxUse=100M
-      RuntimeMaxUse=50M
-    '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "100M";
+    RuntimeMaxUse = "50M";
   };
 
   # Kernel parameters for power saving
