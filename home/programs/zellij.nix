@@ -105,7 +105,18 @@ let
             bind "j" { MoveFocus "Down"; SwitchToMode "Locked"; }
             bind "k" { MoveFocus "Up"; SwitchToMode "Locked"; }
             bind "n" { NewPane; SwitchToMode "Locked"; }
-            bind "f" { ToggleFloatingPanes; SwitchToMode "Locked"; }
+            bind "f" {
+                Run "nu" {
+                    floating true
+                    close_on_exit true
+                    x "5%"
+                    y "5%"
+                    width "90%"
+                    height "90%"
+                };
+                SwitchToMode "Locked"
+            }
+            bind "Shift f" { ToggleFloatingPanes; SwitchToMode "Locked"; }
             bind "z" { ToggleFocusFullscreen; SwitchToMode "Locked"; }
             bind "[" { PreviousSwapLayout; SwitchToMode "Locked"; }
             bind "]" { NextSwapLayout; SwitchToMode "Locked"; }

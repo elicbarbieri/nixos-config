@@ -23,7 +23,17 @@ let
     # Load init scripts (shell integrations)
     source ${initScripts.atuin}
     source ${initScripts.carapace}
+
+    # carapace knows nothing → explicit fish bridge (zstd, zellij, psql, … ~1000 cmds)
+    # - CARAPACE_BRIDGES=fish can't discover fish 4's embedded completions (no .fish files on disk)
+    let carapace_only = $env.config.completions.external.completer
+    $env.config.completions.external.completer = {|spans|
+      let found = do $carapace_only $spans
+      if ($found | is-not-empty) { return $found }
+      ^carapace $"($spans.0)/fish" nushell ...$spans | from json
+    }
     source ${initScripts.starship}
+    source ${initScripts.nixYourShell}
     
     # Load completions
     source ${completions.uv}

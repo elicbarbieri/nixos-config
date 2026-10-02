@@ -24,6 +24,7 @@ let
     knope
 
     carapace
+    fish  # carapace bridge (completion source only, not a login shell)
     direnv
     fd
     fzf

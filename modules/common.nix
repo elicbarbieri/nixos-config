@@ -26,6 +26,14 @@ in
 
   environment.systemPackages = commonPkgs;
 
+  programs.nh = {
+    enable = true;
+    flake = "/home/elicb/nixos-config";
+  };
+
+  # prebuilt weekly nix-index db (nix-index-database flake) → `, <cmd>` runs anything in nixpkgs
+  programs.nix-index-database.comma.enable = true;
+
   # uv-downloaded python executables (.venv/bin/python) link these at runtime
   programs.nix-ld = {
     enable = true;

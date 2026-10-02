@@ -31,9 +31,20 @@ in
     ${pkgs.atuin}/bin/atuin init nu --disable-up-arrow > $out
   '';
   
+  # `nix develop` / `nix shell` → nu instead of bash
+  nixYourShell = pkgs.runCommand "nix-your-shell.nu" {} ''
+    ${pkgs.nix-your-shell}/bin/nix-your-shell nu > $out
+  '';
+
   # Carapace shell integration (external completer with alias expansion)
+  # sandbox HOME (/homeless-shelter) baked into carapace's user bin dir → resolve per user at runtime
   carapace = pkgs.runCommand "carapace-init.nu" {} ''
-    ${pkgs.carapace}/bin/carapace _carapace nushell > $out
+    ${pkgs.carapace}/bin/carapace _carapace nushell \
+      | sed "s#\"$HOME/.config/carapace/bin\"#(\$env.HOME | path join .config carapace bin)#g" > $out
+    if grep -q "$HOME" $out; then
+      echo "carapace init still references build HOME ($HOME)" >&2
+      exit 1
+    fi
   '';
   
   # Starship prompt integration - use wrapper to get config

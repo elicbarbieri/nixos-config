@@ -22,9 +22,11 @@
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
     zjstatus.url = "github:dj95/zjstatus";
     zjstatus.inputs.nixpkgs.follows = "nixpkgs";
+    nix-index-database.url = "github:nix-community/nix-index-database";
+    nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-stable, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, zjstatus, ... }:
+  outputs = { self, nixpkgs, nixpkgs-stable, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, zjstatus, nix-index-database, ... }:
   let
     system = "x86_64-linux";
     stableOverlay = _: _: {
@@ -58,6 +60,7 @@
           ./modules/vm-variant.nix
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
+          nix-index-database.nixosModules.default
 
           home-manager.nixosModules.home-manager
           {
