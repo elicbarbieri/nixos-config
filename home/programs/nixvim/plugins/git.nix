@@ -1,10 +1,5 @@
 { ... }: {
   plugins = {
-      # LazyGit integration
-      lazygit = {
-        enable = true;
-      };
-      
       # Git signs in the gutter
       gitsigns = {
         enable = true;
@@ -44,18 +39,25 @@
     
   # Keymaps for git (LazyVim style)
   keymaps = [
-      # LazyGit
       {
         mode = "n";
         key = "<leader>gg";
-        action = "<cmd>LazyGit<cr>";
-        options.desc = "Lazygit (Root Dir)";
-      }
-      {
-        mode = "n";
-        key = "<leader>gG";
-        action = "<cmd>LazyGit<cr>";
-        options.desc = "Lazygit (cwd)";
+        # real lazygit in zellij float (own colours, nvim stays open)
+        # - --blocking → checktime once pane closes (checkout/discard rewrite files)
+        action.__raw = ''
+          function()
+            if not vim.env.ZELLIJ then
+              vim.notify("lazygit float needs zellij", vim.log.levels.WARN)
+              return
+            end
+            vim.system({
+              "zellij", "run", "--floating", "--close-on-exit", "--blocking", "--name", "lazygit",
+              "--width", "90%", "--height", "90%", "--x", "5%", "--y", "5%",
+              "--cwd", vim.fn.getcwd(), "--", "lazygit",
+            }, {}, vim.schedule_wrap(function() vim.cmd.checktime() end))
+          end
+        '';
+        options.desc = "Lazygit (zellij float)";
       }
       
       # Git diff

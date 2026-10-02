@@ -147,6 +147,8 @@
   ];
 
   services = {
+    # ztest VG on nvme0n1 (topolvm thin pool) → dm-thin-pool/dm-snapshot + thin_check for activation
+    lvm.boot.thin.enable = true;
     thermald.enable = true;
     fwupd.enable = true;
     hardware.bolt.enable = true;
@@ -176,15 +178,6 @@
         };
 
         boot.kernelParams = [ "i915.enable_dc=0" ];
-      };
-    };
-
-    # kind cluster ztest runs against
-    kubernetes = {
-      inheritParentConfig = true;
-      configuration = {
-        # topolvm.io thin-pool backing for snapshot-capable CoW storage
-        boot.kernelModules = [ "dm_snapshot" "dm_thin_pool" ];
       };
     };
   };

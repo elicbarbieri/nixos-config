@@ -14,7 +14,6 @@ let
   nu = import ../home/programs/nushell { inherit pkgs starship; };
   atuin = import ../home/programs/atuin { inherit pkgs; };
   bat = import ../home/programs/bat.nix { inherit pkgs; };
-  kitty = import ../home/programs/kitty.nix { inherit pkgs; };
   zellij = import ../home/programs/zellij.nix { inherit pkgs; };
 
   # CLI tools
@@ -100,5 +99,5 @@ in
   common =
     cli ++ dev
     ++ pkgs.lib.optionals isDesktop cloud
-    ++ [ nvim git nu starship atuin bat kitty zellij pkgs.kitty.terminfo ];
+    ++ [ nvim git nu starship atuin bat zellij pkgs.ghostty.terminfo ];
 }

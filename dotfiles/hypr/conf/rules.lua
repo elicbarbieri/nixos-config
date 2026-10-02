@@ -9,10 +9,9 @@ hl.window_rule({
     float = true,
 })
 
--- Floating kitty
 hl.window_rule({
-    name  = "float-kitty",
-    match = { class = "^(kitty-floating)$" },
+    name  = "float-terminal",
+    match = { class = "^(com\\.mitchellh\\.ghostty\\.floating)$" },
     float = true,
 })
 

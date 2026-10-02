@@ -20,9 +20,11 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
+    zjstatus.url = "github:dj95/zjstatus";
+    zjstatus.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-stable, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, ... }:
+  outputs = { self, nixpkgs, nixpkgs-stable, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, zjstatus, ... }:
   let
     system = "x86_64-linux";
     stableOverlay = _: _: {
@@ -31,10 +33,11 @@
         config.allowUnfree = true;
       };
     };
+    zjstatusOverlay = _: _: { zjstatus = zjstatus.packages.${system}.default; };
     pkgs = import nixpkgs {
       inherit system;
       config.allowUnfree = true;
-      overlays = [ stableOverlay ];
+      overlays = [ stableOverlay zjstatusOverlay ];
     };
     pkgsStable = pkgs.stable;
 
@@ -47,7 +50,7 @@
         modules = [
           {
             nixpkgs.hostPlatform = system;
-            nixpkgs.overlays = [ stableOverlay ];
+            nixpkgs.overlays = [ stableOverlay zjstatusOverlay ];
           }
           host
           ./modules/common.nix

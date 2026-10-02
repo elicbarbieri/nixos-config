@@ -3,6 +3,7 @@
 {
   imports = [
     ./base.nix
+    ./programs/ghostty.nix
   ];
 
   # Desktop-specific configuration (GUI apps, theming, etc.)

@@ -6,14 +6,13 @@ let
     exec ${pkgs.pinentry-rofi}/bin/pinentry-rofi -- -theme ~/.config/rofi/pinentry.rasi "$@"
   '';
 
-  # Override neovim .desktop to launch inside kitty instead of relying on
-  # the launcher's default terminal (which is often xterm with tiny fonts)
+  # launcher default terminal = xterm
   nvim-desktop = pkgs.makeDesktopItem {
     name = "nvim";
     desktopName = "Neovim";
     genericName = "Text Editor";
     comment = "Edit text files";
-    exec = "kitty nvim %F";
+    exec = "ghostty -e nvim %F";
     icon = "nvim";
     terminal = false;
     categories = [ "Utility" "TextEditor" ];

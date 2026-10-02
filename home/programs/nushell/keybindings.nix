@@ -1,29 +1,6 @@
 ''
-$env.config.keybindings = [
-    # Shift+Enter for newline
-    {
-        name: insert_newline
-        modifier: shift
-        keycode: enter
-        mode: emacs
-        event: { edit: insertnewline }
-    }
-    
-    # Enhanced completion menu
-    {
-        name: completion_menu
-        modifier: none
-        keycode: tab
-        mode: emacs
-        event: {
-            until: [
-                { send: menu name: completion_menu }
-                { send: menunext }
-            ]
-        }
-    }
-    
-    # Quick directory navigation with fzf
+# ++= (plain = wipes nushell's default bindings)
+$env.config.keybindings ++= [
     {
         name: quick_cd
         modifier: control
@@ -34,8 +11,6 @@ $env.config.keybindings = [
             cmd: "cd (fd . -t d | fzf --height=50% --preview '^ls --color=always {}' | str trim)"
         }
     }
-    
-    # Quick file finder with fzf
     {
         name: file_finder
         modifier: control
@@ -46,8 +21,6 @@ $env.config.keybindings = [
             cmd: "commandline edit --insert (fd . -t f | fzf --height=50% --preview '^bat --color=always {}' | str trim)"
         }
     }
-
-    # Open current directory in file manager
     {
         name: open_in_explorer
         modifier: control

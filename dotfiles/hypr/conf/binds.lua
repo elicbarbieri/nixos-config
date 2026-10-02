@@ -27,9 +27,10 @@ hl.bind(mod .. " + CONTROL + F",  hl.dsp.window.fullscreen({ mode = "fullscreen"
 hl.bind(mod .. " + SHIFT + F",    hl.dsp.window.fullscreen({ mode = "maximized" }))
 
 -- ----- Launchers -----
-hl.bind(mod .. " + RETURN",         exec("uwsm-app $(kitty -1)"))
-hl.bind(mod .. " + SHIFT + RETURN", exec("uwsm-app $(kitty --class kitty-floating -1)"))
-hl.bind(mod .. " + SHIFT + E",      exec("uwsm-app kitty -1 -e yazi"))
+hl.bind(mod .. " + RETURN",         exec("uwsm app -- ghostty"))
+hl.bind(mod .. " + SHIFT + RETURN", exec("uwsm app -- ghostty --class=com.mitchellh.ghostty.floating"))
+hl.bind(mod .. " + CONTROL + RETURN", exec("uwsm app -- ghostty -e zellij -l welcome"))
+hl.bind(mod .. " + SHIFT + E",      exec("uwsm app -- ghostty -e yazi"))
 hl.bind(mod .. " + W",              exec("uwsm app -- " .. browser))
 hl.bind(mod .. " + SHIFT + W",      exec("uwsm app -- " .. browser .. " --private-window"))
 hl.bind(mod .. " + M",              exec("uwsm app -- flatpak run com.spotify.Client"))
