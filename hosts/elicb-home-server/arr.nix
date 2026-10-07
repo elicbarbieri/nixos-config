@@ -36,13 +36,13 @@
 
   # === Arr Services (native NixOS modules) ===
 
-  services.prowlarr = { enable = true; openFirewall = true; };       # :9696
-  services.radarr   = { enable = true; group = "media"; openFirewall = true; };  # :7878
-  services.sonarr   = { enable = true; group = "media"; openFirewall = true; };  # :8989
-  services.lidarr   = { enable = true; group = "media"; openFirewall = true; };  # :8686
+  services.prowlarr = { enable = true; };       # :9696
+  services.radarr   = { enable = true; group = "media"; };  # :7878
+  services.sonarr   = { enable = true; group = "media"; };  # :8989
+  services.lidarr   = { enable = true; group = "media"; };  # :8686
 
-  services.bazarr   = { enable = true; group = "media"; openFirewall = true; };  # :6767
-  services.jellyseerr = { enable = true; openFirewall = true; };     # :5055
+  services.bazarr   = { enable = true; group = "media"; };  # :6767
+  services.jellyseerr = { enable = true; };     # :5055
 
   # === Recyclarr (TRaSH Guides quality profiles) ===
   # Timer-based service that syncs quality profiles from TRaSH Guides
@@ -69,7 +69,8 @@
   # === Homarr Dashboard (Docker container) ===
   virtualisation.oci-containers.containers.homarr = {
     image = "ghcr.io/homarr-labs/homarr:latest";
-    ports = [ "7575:7575" ];
+    # Mesh address only (docker -p DNAT bypasses the NixOS firewall)
+    ports = [ "${config.nebula.lighthouseAddr}:7575:7575" ];
     volumes = [
       "/var/lib/homarr:/appdata"
     ];
@@ -78,7 +79,11 @@
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 7575 58846 ];
+  # Bind to the mesh address → needs nebula.mesh up
+  systemd.services.docker-homarr = {
+    after = [ "nebula@mesh.service" ];
+    requires = [ "nebula@mesh.service" ];
+  };
 
   # === Deluge (torrent client) ===
 

@@ -20,7 +20,7 @@
 
 let
   subnet = "10.99.0.0/24";
-  lighthouseAddr = "10.99.0.1";
+  lighthouseAddr = config.nebula.lighthouseAddr;
   listenPort = 4242;
 
   # Candidate underlay addresses for the lighthouse, tried in order. Entries
@@ -45,6 +45,13 @@ in
       fixed port and relays traffic between peers that cannot hole-punch
       directly; every other host dials it.
     '';
+  };
+
+  options.nebula.lighthouseAddr = lib.mkOption {
+    type = lib.types.str;
+    default = "10.99.0.1";
+    readOnly = true;
+    description = "Mesh address of the lighthouse (baked into its certificate).";
   };
 
   config = {

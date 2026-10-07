@@ -12,7 +12,7 @@ let
       listen_addr = "0.0.0.0:8233";
     };
     state.cache_dir = "${zebraDir}/data";
-    # Unauthenticated: 8232 reachable only via trustedInterfaces (tailnet ACL = auth)
+    # Unauthenticated: 8232 open on tailscale0 + nebula.mesh only (tailnet ACL = auth)
     rpc = {
       listen_addr = "0.0.0.0:8232";
       enable_cookie_auth = false;
@@ -113,9 +113,8 @@ in
 
   networking.hostName = "elicb-home-server";
 
-  # Tailscale mesh VPN. Authenticate once with `sudo tailscale up`. The admin
-  # web UIs (arr stack, Homarr, Deluge) are reachable over the tailnet, which is
-  # why none of them get a public DNS record in reverse-proxy.nix.
+  # Tailscale = zingolabs tailnet (vaquita-altair), zebrad RPC only
+  # - Admin UIs (arr, Homarr, Deluge) = Nebula only (nebula.mesh trusted in modules/nebula.nix)
   services.tailscale = {
     enable = true;
     openFirewall = true;
@@ -124,7 +123,8 @@ in
   # Firewall configuration
   networking.firewall = {
     enable = true;
-    trustedInterfaces = [ "tailscale0" ];
+    # Not trusted: tailnet admins hold a "*" grant → only zebrad RPC exposed
+    interfaces.tailscale0.allowedTCPPorts = [ 8232 ];
     allowedTCPPorts = [
       27020 27021 27022  # ARK RCON ports (Island, Scorched, Aberration)
       8233               # zebrad P2P
