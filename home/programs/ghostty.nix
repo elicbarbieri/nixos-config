@@ -30,6 +30,8 @@ in
       window-padding-y = 10;
       window-decoration = "none";
       confirm-close-surface = false;
+      # default toggle_fullscreen (Hyprland Super+F covers it)
+      keybind = [ "ctrl+enter=unbind" ];
     };
   };
 }

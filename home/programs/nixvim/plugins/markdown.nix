@@ -118,26 +118,31 @@
     };
   };
 
-  # Custom browser function for opening preview using layoutmsg preselect for right-side positioning
+  # browserfunc = vimscript name only (mkdp calls it async, after server start → placement via global)
   extraConfigVim = ''
     function! OpenMarkdownPreview(url)
-      execute "silent ! hyprctl dispatch layoutmsg preselect r ; brave --app=" . a:url . " &"
+      let l:argv = ['brave', '--app=' . a:url]
+      if get(g:, 'markdown_preview_float', 0)
+        call v:lua.require'hypr'.spawn_float(l:argv)
+      else
+        call v:lua.require'hypr'.spawn_right(l:argv)
+      endif
     endfunction
   '';
 
-  # Keymaps for markdown preview
+  # no MarkdownPreviewStop bind (auto_close stops server on buffer leave, Super+C kills window)
   keymaps = [
     {
       mode = "n";
       key = "<leader>up";
-      action = "<cmd>MarkdownPreview<cr>";
-      options.desc = "Markdown Preview";
+      action = "<cmd>let g:markdown_preview_float = 0 | MarkdownPreview<cr>";
+      options.desc = "Markdown Preview (right split)";
     }
     {
       mode = "n";
       key = "<leader>uP";
-      action = "<cmd>MarkdownPreviewStop<cr>";
-      options.desc = "Stop Markdown Preview";
+      action = "<cmd>let g:markdown_preview_float = 1 | MarkdownPreview<cr>";
+      options.desc = "Markdown Preview (floating)";
     }
   ];
 }

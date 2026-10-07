@@ -46,10 +46,9 @@
     };
   };
 
-  # Open zathura on the right side (same pattern as markdown preview)
   extraConfigVim = ''
     function! OpenLatexPreview()
-      execute "silent ! hyprctl dispatch layoutmsg preselect r"
+      call v:lua.require'hypr'.preselect_right()
       VimtexCompile
     endfunction
   '';

@@ -3,6 +3,7 @@
     ./settings.nix
     ./keymaps.nix
     ./autocmds.nix
+    ./hyprland.nix
     ./plugins/colorschemes.nix
     ./plugins/lsp.nix
     ./plugins/cmp.nix
