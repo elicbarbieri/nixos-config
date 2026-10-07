@@ -119,14 +119,17 @@
   };
 
   # browserfunc = vimscript name only (mkdp calls it async, after server start → placement via global)
+  # - fresh --user-data-dir per preview = own brave process (no handoff to main browser), rm'd on exit
+  # - --profile-directory → app_id suffix (-MkdpFloat matched in dotfiles/hypr/conf/rules.lua)
   extraConfigVim = ''
     function! OpenMarkdownPreview(url)
-      let l:argv = ['brave', '--app=' . a:url]
-      if get(g:, 'markdown_preview_float', 0)
-        call v:lua.require'hypr'.spawn_float(l:argv)
-      else
-        call v:lua.require'hypr'.spawn_right(l:argv)
+      let l:float = get(g:, 'markdown_preview_float', 0)
+      if !l:float
+        call v:lua.require'hypr'.preselect_right()
       endif
+      call jobstart(['sh', '-c',
+        \ 'd=$(mktemp -d "$XDG_RUNTIME_DIR/mkdp-brave.XXXXXX") || exit 1; brave --user-data-dir="$d" --profile-directory="$1" --app="$2"; rm -rf "$d"',
+        \ 'sh', l:float ? 'MkdpFloat' : 'MkdpSplit', a:url], {'detach': v:true})
     endfunction
   '';
 

@@ -9,26 +9,9 @@
       end
     end
 
-    local function sh_join(argv)
-      return table.concat(vim.tbl_map(function(a) return "'" .. (a:gsub("'", [['"'"']])) .. "'" end, argv), " ")
-    end
-
     -- dwindle preselect = one-shot, consumed by next window opened on workspace
     function M.preselect_right()
       dispatch('hl.dsp.layout("preselect r")')
-    end
-
-    function M.spawn_right(argv)
-      M.preselect_right()
-      vim.system(argv, { detach = true })
-    end
-
-    -- exec rules = window rules scoped to spawned pid (size takes expressions, not "80%")
-    function M.spawn_float(argv)
-      dispatch(string.format(
-        'hl.dsp.exec_cmd(%q, { float = true, center = true, size = "monitor_w*0.8 monitor_h*0.8" })',
-        sh_join(argv)
-      ))
     end
 
     return M

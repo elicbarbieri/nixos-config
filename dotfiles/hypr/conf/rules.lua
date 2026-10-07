@@ -15,6 +15,15 @@ hl.window_rule({
     float = true,
 })
 
+-- nvim <leader>uP (brave --profile-directory=MkdpFloat → app_id suffix)
+hl.window_rule({
+    name   = "float-markdown-preview",
+    match  = { class = "^brave-.*-MkdpFloat$" },
+    float  = true,
+    center = true,
+    size   = "monitor_w*0.8 monitor_h*0.8",
+})
+
 -- Picture-in-Picture: float, fixed size/position, always on top
 hl.window_rule({
     name  = "picture-in-picture",
