@@ -12,6 +12,9 @@ alias .. = cd ..
 alias ... = cd ../..
 alias .... = cd ../../..
 
+# Shadows nu builtin cp (^cp = GNU)
+alias cp = xcp
+
 # System monitoring - run btop with sudo automatically (passwordless)
 alias btop = sudo btop
 

@@ -34,6 +34,7 @@ let
     xxd
     tree
     tokei
+    xcp
 
     nebula
     traceroute
