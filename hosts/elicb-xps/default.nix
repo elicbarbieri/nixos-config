@@ -29,6 +29,10 @@
   # - on hang/black-screen: previous generation from the systemd-boot menu, drop this line
   boot.initrd.systemd.enable = true;
 
+  # no LVM in stage 1 (root = btrfs): initrd autoactivated ztest, switch-root killed its thin_check
+  # mid-run → pool left inactive with thin_tmeta/thin_tdata active, topolvm dead until manual fix
+  boot.initrd.services.lvm.enable = false;
+
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = true;  # → PreserveVideoMemoryAllocations, see fbdev note above
@@ -147,7 +151,7 @@
   ];
 
   services = {
-    # ztest VG on nvme0n1 (topolvm thin pool) → dm-thin-pool/dm-snapshot + thin_check for activation
+    # ztest VG (topolvm thin pool) → stage-2 lvm.conf thin_check/thin_repair paths for activation
     lvm.boot.thin.enable = true;
     thermald.enable = true;
     fwupd.enable = true;
