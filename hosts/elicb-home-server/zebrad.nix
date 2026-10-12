@@ -16,6 +16,12 @@ let
       peerset_initial_target_size = 100;
       # Peer address cache (default ~/.cache: no home + ProtectHome = never written)
       cache_dir = "${zebraDir}/data";
+      # Own peers (zaino-prod, ztest zebrads) never lose to full public slots
+      # - tailscale0 only (firewall): tailnet ACL = who reaches it
+      reserved_listener = {
+        listen_addr = "0.0.0.0:8234";
+        slots = 16;
+      };
     };
     state.cache_dir = "${zebraDir}/data";
     # Unauthenticated: 8232 + 8230 open on tailscale0 + nebula.mesh only (tailnet ACL = auth)
@@ -39,7 +45,7 @@ in
   networking.firewall = {
     allowedTCPPorts = [ 8233 ];
     # Not trusted: tailnet admins hold a "*" grant → only zebrad RPC + indexer exposed
-    interfaces.tailscale0.allowedTCPPorts = [ 8232 8230 ];
+    interfaces.tailscale0.allowedTCPPorts = [ 8232 8230 8234 ];
   };
 
   systemd.services.zebrad = {

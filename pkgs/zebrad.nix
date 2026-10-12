@@ -5,17 +5,15 @@ rustPlatform.buildRustPackage rec {
   pname = "zebrad";
   version = "6.4.2";
 
+  # v6.4.2 + reserved P2P listener + journald-native logs (fork branch elicb/v6.4.2-reserved-listener)
   src = fetchFromGitHub {
-    owner = "ZcashFoundation";
+    owner = "elicbarbieri";
     repo = "zebra";
-    tag = "v${version}";
-    hash = "sha256-KtvGrXHLRhJnjnaxQvIoS4evB3EOKauChcbnYPACdAM=";
+    rev = "47f97e195375328b1763a386d8098f081b7c4a46";
+    hash = "sha256-556dsO1TU169Wjb/2O8+xVhc3b50FarP1V8idBn3gws=";
   };
 
   cargoHash = "sha256-S4/nSnv28L/7QH9gWHJLfUUZSQ+uORhx1w764uArQB0=";
-
-  # rebase onto new tags (src touched: zebrad/src/components/tracing{.rs,/component.rs,/journal.rs})
-  patches = [ ./zebrad-journal-stream.patch ];
 
   cargoBuildFlags = [ "--package" "zebrad" "--bin" "zebrad" ];
 
