@@ -139,6 +139,7 @@
 
   # Colemak on/off (QWERTY passthrough), bound in Hyprland
   environment.systemPackages = [
+    pkgs.smartmontools
     (pkgs.writeShellScriptBin "keyd-toggle" ''
       if systemctl is-active --quiet keyd; then
         systemctl stop keyd
@@ -156,6 +157,7 @@
     thermald.enable = true;
     fwupd.enable = true;
     hardware.bolt.enable = true;
+    smartd.enable = true;
   };
 
   # firmware-metadata refresh cost ~3s of boot CPU/IO; timer still runs while up, only the
