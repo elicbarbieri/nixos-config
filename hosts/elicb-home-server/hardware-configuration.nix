@@ -13,6 +13,32 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
+  fileSystems = let
+    root = subvol: options: {
+      device = "/dev/disk/by-uuid/ad4fc37e-5183-4e9d-aa39-7a42481175d8";
+      fsType = "btrfs";
+      options = [ "subvol=${subvol}" ] ++ options;
+    };
+  in {
+    "/" = root "@" [ "compress=zstd" "noatime" ];
+    "/nix" = root "@nix" [ "compress=zstd" "noatime" ];
+    "/home" = root "@home" [ "compress=zstd" ];
+    "/.snapshots" = root "@snapshots" [ "compress=zstd" ];
+    "/boot" = {
+      device = "/dev/disk/by-uuid/7D32-B7D8";
+      fsType = "vfat";
+    };
+    # RAID5 (mdadm array b0de9c80:a5ac423d:61f20052:ba33e57e)
+    "/mnt/md0" = {
+      device = "/dev/disk/by-uuid/d9b99d85-6a26-4637-b8db-342f465b58f8";
+      fsType = "ext4";
+    };
+    "/mnt/deepstor" = {
+      device = "/dev/disk/by-label/deepstor";
+      fsType = "ext4";
+    };
+  };
+
   swapDevices = [ ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking

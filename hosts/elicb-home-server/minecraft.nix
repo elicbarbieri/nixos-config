@@ -1,67 +1,102 @@
-# Minecraft Server Configuration - G-Chat Create
+# Minecraft servers (mrpack4server, one systemd unit per entry in `servers`)
 { config, pkgs, lib, ... }:
 
 let
-  serverDir = "/srv/minecraft/g_chat_create";
-
-  # mrpack4server launcher - simple modpack server runner
   mrpack4server = pkgs.fetchurl {
     url = "https://github.com/Patbox/mrpack4server/releases/download/0.5.0/mrpack4server-0.5.0.jar";
     sha256 = "sha256-6Jvar8Pw9cB+2RLLKca+q2FxZXmWB4DrfFtxKbuqxl8=";
   };
 
-  # Modpack file path
-  modpackFile = ../../assets/minecraft/g-chat-create-1.5.0.mrpack;
+  players = {
+    CrazedInvento = { uuid = "31a86a8f-95d9-4c14-a620-2fc0691a7a52"; op = true; };
+    mallanin = { uuid = "2ed115bf-5c8c-476c-ae31-2cb3513d3fe9"; };
+    RareJaimiller = { uuid = "c107d6d9-2d54-405f-a702-c0c53d5dffe1"; };
+    stonkmaster3000 = { uuid = "edaee148-c36a-4e22-b31d-e0213edeae8c"; }; # Benn
+    Sacajaweagle = { uuid = "196e9640-0f23-4934-ba73-4f923bba8e1b"; }; # Julia
+    taintgoblin7 = { uuid = "ef563009-0c41-467c-92aa-9ef98d8367a9"; }; # Agustin
+  };
+
+  servers = {
+    g_chat_create = {
+      description = "G-Chat Create";
+      modpack = ../../assets/minecraft/g-chat-create-1.5.0.mrpack;
+      port = 25565;
+      memory = { min = "4G"; max = "8G"; };
+    };
+  };
+
+  whitelistJson = pkgs.writeText "whitelist.json" (builtins.toJSON
+    (lib.mapAttrsToList (name: p: { inherit name; inherit (p) uuid; }) players));
+
+  opsJson = pkgs.writeText "ops.json" (builtins.toJSON
+    (lib.mapAttrsToList (name: p: {
+      inherit name;
+      inherit (p) uuid;
+      level = 4;
+      bypassesPlayerLimit = false;
+    }) (lib.filterAttrs (_: p: p.op or false) players)));
+
+  serverProperties = server: {
+    white-list = true;
+    enforce-whitelist = true;
+    online-mode = true;
+    server-port = server.port;
+  };
+
+  mkService = name: server:
+    let
+      dir = "/srv/minecraft/${name}";
+      setProperties = lib.concatStrings (lib.mapAttrsToList (key: value:
+        let line = "${key}=${lib.generators.mkValueStringDefault { } value}"; in ''
+          if grep -q '^${key}=' server.properties; then
+            sed -i 's|^${key}=.*|${line}|' server.properties
+          else
+            echo '${line}' >> server.properties
+          fi
+        '') (serverProperties server));
+    in
+    lib.nameValuePair "minecraft-${name}" {
+      description = "${server.description} Minecraft Server";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" "local-fs.target" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "minecraft";
+        Group = "minecraft";
+        WorkingDirectory = dir;
+        Restart = "on-failure";
+        RestartSec = "30s";
+        # + = root (install -o)
+        ExecStartPre = "+" + pkgs.writeShellScript "minecraft-${name}-setup" ''
+          set -euo pipefail
+          cd "${dir}"
+          install -o minecraft -g minecraft -m 644 "${server.modpack}" local.mrpack
+          install -o minecraft -g minecraft -m 644 "${mrpack4server}" mrpack4server.jar
+          install -o minecraft -g minecraft -m 644 ${whitelistJson} whitelist.json
+          install -o minecraft -g minecraft -m 644 ${opsJson} ops.json
+          echo "eula=true" > eula.txt
+          touch server.properties
+          ${setProperties}
+          chown minecraft:minecraft eula.txt server.properties
+        '';
+        ExecStart = "${pkgs.jdk21}/bin/java -Xms${server.memory.min} -Xmx${server.memory.max} -jar ${dir}/mrpack4server.jar nogui";
+      };
+    };
 in
 {
-  # Java runtime for Minecraft
   environment.systemPackages = [ pkgs.jdk21 ];
 
-  # Firewall
-  networking.firewall.allowedTCPPorts = [ 25565 ];
+  networking.firewall.allowedTCPPorts = lib.mapAttrsToList (_: s: s.port) servers;
 
-  # Minecraft user
   users.users.minecraft = {
     isSystemUser = true;
     group = "minecraft";
-    home = serverDir;
+    home = "/var/lib/minecraft";
     createHome = true;
   };
-  users.groups.minecraft = {};
+  users.groups.minecraft = { };
 
-  # Systemd service
-  systemd.services.minecraft-g_chat_create = {
-    description = "G-Chat Create Minecraft Server";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" "local-fs.target" ];
+  systemd.tmpfiles.rules = lib.mapAttrsToList (name: _: "v /srv/minecraft/${name} 0700 minecraft minecraft -") servers;
 
-    serviceConfig = {
-      Type = "simple";
-      User = "minecraft";
-      Group = "minecraft";
-      WorkingDirectory = serverDir;
-      Restart = "on-failure";
-      RestartSec = "30s";
-
-      # + prefix runs as root
-      ExecStartPre = "+" + pkgs.writeShellScript "minecraft-setup" ''
-        # Ensure directory exists and is owned by minecraft
-        mkdir -p "${serverDir}"
-        chown minecraft:minecraft "${serverDir}"
-
-        # Always copy modpack and launcher to pick up updates
-        cp "${modpackFile}" "${serverDir}/local.mrpack"
-        chown minecraft:minecraft "${serverDir}/local.mrpack"
-
-        cp "${mrpack4server}" "${serverDir}/mrpack4server.jar"
-        chown minecraft:minecraft "${serverDir}/mrpack4server.jar"
-
-        # Accept EULA
-        echo "eula=true" > "${serverDir}/eula.txt"
-        chown minecraft:minecraft "${serverDir}/eula.txt"
-      '';
-
-      ExecStart = "${pkgs.jdk21}/bin/java -Xms4G -Xmx8G -jar ${serverDir}/mrpack4server.jar nogui";
-    };
-  };
+  systemd.services = lib.mapAttrs' mkService servers;
 }

@@ -299,7 +299,9 @@ in
   # ===========================================================================
   # Ensure shared whitelist file exists for cluster-wide password bypass
 
-  systemd.tmpfiles.rules = [
+  # 25000 = gameserver uid inside the ASA image
+  systemd.tmpfiles.rules = map (dir: "v /srv/ark/${dir} 0755 25000 25000 -")
+    (maps ++ [ "cluster" "steam" ]) ++ [
     "d /srv/ark/shared 0755 1000 1000 -"
     "f /srv/ark/shared/PlayersJoinNoCheckList.txt 0644 1000 1000 -"
   ];

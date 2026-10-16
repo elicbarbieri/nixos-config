@@ -7,7 +7,6 @@ in
 {
   imports = [
     ./hardware-configuration.nix
-    ./disko-config.nix
     ./ark.nix
     ./arr.nix
     ./minecraft.nix
@@ -65,18 +64,6 @@ in
     templates."acme-cloudflare.env".content = ''
       CLOUDFLARE_DNS_API_TOKEN=${config.sops.placeholder."cloudflare/api-token"}
     '';
-  };
-
-  # UUID: b0de9c80:a5ac423d:61f20052:ba33e57e (RAID array UUID)
-  # Filesystem UUID: d9b99d85-6a26-4637-b8db-342f465b58f8
-  fileSystems."/mnt/md0" = {
-    device = "/dev/disk/by-uuid/d9b99d85-6a26-4637-b8db-342f465b58f8";
-    fsType = "ext4";
-  };
-
-  fileSystems."/mnt/deepstor" = {
-    device = "/dev/disk/by-label/deepstor";
-    fsType = "ext4";
   };
 
   # BFQ I/O scheduler for sdb (SMR HDD) — much better for mixed random read/write workloads
