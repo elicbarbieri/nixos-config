@@ -23,6 +23,12 @@ let
       port = 25565;
       memory = { min = "4G"; max = "8G"; };
     };
+    "121_rebirth" = {
+      description = "Rebirth";
+      modpack = ../../assets/minecraft/rebirth-1.0.0.mrpack;
+      port = 25566;
+      memory = { min = "4G"; max = "10G"; };
+    };
   };
 
   whitelistJson = pkgs.writeText "whitelist.json" (builtins.toJSON
@@ -58,7 +64,8 @@ let
     lib.nameValuePair "minecraft-${name}" {
       description = "${server.description} Minecraft Server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" "local-fs.target" ];
+      # resetup = tmpfiles on switch (new server's subvol must exist before WorkingDirectory)
+      after = [ "network.target" "local-fs.target" "systemd-tmpfiles-resetup.service" ];
       serviceConfig = {
         Type = "simple";
         User = "minecraft";
