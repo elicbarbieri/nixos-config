@@ -46,6 +46,8 @@ let
     white-list = true;
     enforce-whitelist = true;
     online-mode = true;
+    # vanilla fly check kicks riders of Sable ships / Create contraptions (whitelist = trusted players)
+    allow-flight = true;
     server-port = server.port;
   };
 
