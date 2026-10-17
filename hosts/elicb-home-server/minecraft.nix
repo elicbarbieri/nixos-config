@@ -73,6 +73,8 @@ let
         WorkingDirectory = dir;
         Restart = "on-failure";
         RestartSec = "30s";
+        # 10× default share under contention (tick thread loses to plex transcodes / deluge otherwise)
+        CPUWeight = 1000;
         # + = root (install -o)
         ExecStartPre = "+" + pkgs.writeShellScript "minecraft-${name}-setup" ''
           set -euo pipefail
