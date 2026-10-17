@@ -25,7 +25,7 @@ let
     };
     "121_rebirth" = {
       description = "Rebirth";
-      modpack = ../../assets/minecraft/rebirth-1.0.0.mrpack;
+      modpack = ../../assets/minecraft/rebirth-1.1.0.mrpack;
       port = 25566;
       memory = { min = "4G"; max = "10G"; };
     };
@@ -51,6 +51,8 @@ let
     server-port = server.port;
   };
 
+  stdin = name: "/run/minecraft-${name}.stdin";
+
   mkService = name: server:
     let
       dir = "/srv/minecraft/${name}";
@@ -62,13 +64,24 @@ let
             echo '${line}' >> server.properties
           fi
         '') (serverProperties server));
+      # wait for exit (else systemd SIGKILLs mid-save at TimeoutStopSec)
+      stop = pkgs.writeShellScript "minecraft-${name}-stop" ''
+        echo stop > ${stdin name}
+        while kill -0 "$1" 2>/dev/null; do sleep 1; done
+      '';
     in
     lib.nameValuePair "minecraft-${name}" {
       description = "${server.description} Minecraft Server";
       wantedBy = [ "multi-user.target" ];
+      requires = [ "minecraft-${name}.socket" ];
       # resetup = tmpfiles on switch (new server's subvol must exist before WorkingDirectory)
-      after = [ "network.target" "local-fs.target" "systemd-tmpfiles-resetup.service" ];
+      after = [ "network.target" "local-fs.target" "systemd-tmpfiles-resetup.service" "minecraft-${name}.socket" ];
       serviceConfig = {
+        StandardInput = "socket";
+        StandardOutput = "journal";
+        StandardError = "journal";
+        ExecStop = "${stop} $MAINPID";
+        TimeoutStopSec = "5min";
         Type = "simple";
         User = "minecraft";
         Group = "minecraft";
@@ -93,11 +106,27 @@ let
         ExecStart = "${pkgs.jdk21}/bin/java -Xms${server.memory.min} -Xmx${server.memory.max} -jar ${dir}/mrpack4server.jar nogui";
       };
     };
+
+  # console FIFO → ExecStop sends `stop` (clean save path, no SIGTERM race with log4j)
+  mkSocket = name: _:
+    lib.nameValuePair "minecraft-${name}" {
+      bindsTo = [ "minecraft-${name}.service" ];
+      socketConfig = {
+        ListenFIFO = stdin name;
+        SocketMode = "0660";
+        SocketUser = "minecraft";
+        SocketGroup = "minecraft";
+        RemoveOnStop = true;
+        FlushPending = true;
+      };
+    };
 in
 {
   environment.systemPackages = [ pkgs.jdk21 ];
 
   networking.firewall.allowedTCPPorts = lib.mapAttrsToList (_: s: s.port) servers;
+  # Sable physics sync = UDP on the game port
+  networking.firewall.allowedUDPPorts = lib.mapAttrsToList (_: s: s.port) servers;
 
   users.users.minecraft = {
     isSystemUser = true;
@@ -110,4 +139,5 @@ in
   systemd.tmpfiles.rules = lib.mapAttrsToList (name: _: "v /srv/minecraft/${name} 0700 minecraft minecraft -") servers;
 
   systemd.services = lib.mapAttrs' mkService servers;
+  systemd.sockets = lib.mapAttrs' mkSocket servers;
 }
