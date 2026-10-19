@@ -5,12 +5,13 @@ rustPlatform.buildRustPackage rec {
   pname = "zebrad";
   version = "6.4.2";
 
-  # v6.4.2 + reserved P2P listener + journald-native logs (fork branch elicb/v6.4.2-reserved-listener)
+  # Fork branch elicb/v6.4.2-reserved-listener-check-admission: v6.4.2 + reserved P2P listener +
+  # journald-native logs + `checkadmission` RPC (zaino's admission check) + protoc ≥ 34 build fix
   src = fetchFromGitHub {
     owner = "elicbarbieri";
     repo = "zebra";
-    rev = "47f97e195375328b1763a386d8098f081b7c4a46";
-    hash = "sha256-556dsO1TU169Wjb/2O8+xVhc3b50FarP1V8idBn3gws=";
+    rev = "b1cf6f8635573b316201043b1b276dda84f50f1c";
+    hash = "sha256-rkzKeCVGVh1H0zwhNp5oHKbP8q4jwd788d6A7U/4fmQ=";
   };
 
   cargoHash = "sha256-S4/nSnv28L/7QH9gWHJLfUUZSQ+uORhx1w764uArQB0=";
