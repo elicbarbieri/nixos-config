@@ -7,11 +7,12 @@ rustPlatform.buildRustPackage rec {
 
   # Fork branch elicb/v6.4.2-reserved-listener-check-admission: v6.4.2 + reserved P2P listener +
   # journald-native logs + `checkadmission` RPC (zaino's admission check) + protoc ≥ 34 build fix
+  # + `[rpc] max_connections` (jsonrpsee's in-flight cap, upstream fixed at 100)
   src = fetchFromGitHub {
     owner = "elicbarbieri";
     repo = "zebra";
-    rev = "b1cf6f8635573b316201043b1b276dda84f50f1c";
-    hash = "sha256-rkzKeCVGVh1H0zwhNp5oHKbP8q4jwd788d6A7U/4fmQ=";
+    rev = "4d6740a3cf1a679ed9e0ef53cdaa8dcd6026324b";
+    hash = "sha256-P9ze4bwi4Sq4NTUQCPIA3z6fMYxn4OFv2+PtSAL5qzc=";
   };
 
   cargoHash = "sha256-S4/nSnv28L/7QH9gWHJLfUUZSQ+uORhx1w764uArQB0=";

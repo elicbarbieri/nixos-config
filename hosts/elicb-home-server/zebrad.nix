@@ -30,6 +30,9 @@ let
       enable_cookie_auth = false;
       # zaino tip + mempool push streams (unset = zaino polls every 1 s)
       indexer_listen_addr = "0.0.0.0:8230";
+      # Requests processed at once (fork patch; upstream = jsonrpsee's fixed 100)
+      # - ≥ zaino-prod's 4 × 192 connections: saturation queues here, never 429s
+      max_connections = 1024;
     };
     # stdout = journald pipe, not a tty (use_color alone → no color)
     tracing.force_use_color = true;
