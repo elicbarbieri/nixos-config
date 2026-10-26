@@ -185,7 +185,7 @@ let
             bind "]" { ScrollToNextPrompt; }
             bind "m" { SelectCommandAtScrollPosition; }
             bind "c" { CopyLastCommandOutput; SwitchToMode "Locked"; }
-            bind "Ctrl c" { ScrollToBottom; SwitchToMode "Locked"; }
+            bind "Esc" { ScrollToBottom; SwitchToMode "Locked"; }
             bind "s" { SwitchToMode "Normal"; }
         }
         entersearch {
@@ -193,8 +193,8 @@ let
             bind "Ctrl c" "Esc" { SwitchToMode "Scroll"; }
         }
         search {
-            bind "n" { Search "down"; }
-            bind "p" { Search "up"; }
+            bind "n" { Search "up"; }
+            bind "N" { Search "down"; }
             bind "c" { SearchToggleOption "CaseSensitivity"; }
             bind "w" { SearchToggleOption "Wrap"; }
             bind "o" { SearchToggleOption "WholeWord"; }
@@ -207,7 +207,7 @@ let
             bind "[" { ScrollToPreviousPrompt; }
             bind "]" { ScrollToNextPrompt; }
             bind "m" { SelectCommandAtScrollPosition; }
-            bind "Ctrl c" { ScrollToBottom; SwitchToMode "Locked"; }
+            bind "Esc" { ScrollToBottom; SwitchToMode "Locked"; }
         }
         session {
             bind "w" {

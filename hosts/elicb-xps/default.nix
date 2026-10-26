@@ -103,9 +103,9 @@
       {
         name = "Canon_LBP646C_UFR2";
         description = "Canon LBP646C UFR II";
-        location = "LAN (static on printer: 172.16.100.163, 20:0b:74:b1:ee:b5)";
+        location = "LAN (10.1.10.189, 20:0b:74:b1:ee:b5)";
         # IP, never .local (AP drops multicast -> mDNS dead here; unicast fine, so pin the address)
-        deviceUri = "socket://172.16.100.163:9100";
+        deviceUri = "socket://10.1.10.189:9100";
         model = "CNRCUPSLBP646CZS.ppd";
         ppdOptions = {
           # 1200 only via UFR2 (IPP driverless caps at 300 = printer-resolution-supported)
