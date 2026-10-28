@@ -30,6 +30,8 @@
 
   # Idle I/O class — BFQ yields disk to plex/ssh/file ops when they need it
   systemd.services.deluged.serviceConfig.IOSchedulingClass = "idle";
+  # Seed reads ~180 IOPS = seek limit of deepstor (SMR HDD) → plex starves; sequential left uncapped
+  systemd.services.deluged.serviceConfig.IOReadIOPSMax = "/mnt/deepstor 50";
   systemd.services.sonarr.serviceConfig.IOSchedulingClass  = "idle";
   systemd.services.radarr.serviceConfig.IOSchedulingClass  = "idle";
   systemd.services.lidarr.serviceConfig.IOSchedulingClass  = "idle";
