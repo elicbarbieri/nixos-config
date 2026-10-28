@@ -3,19 +3,19 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "zebrad";
-  version = "6.4.2";
+  version = "7.0.0-rc.0";
 
-  # Fork branch elicb/v6.4.2-reserved-listener-check-admission: v6.4.2 + reserved P2P listener +
+  # Fork branch zebra-deploy-target: v7.0.0-rc.0 + reserved P2P listener +
   # journald-native logs + `checkadmission` RPC (zaino's admission check) + protoc ≥ 34 build fix
   # + `[rpc] max_connections` (jsonrpsee's in-flight cap, upstream fixed at 100)
   src = fetchFromGitHub {
     owner = "elicbarbieri";
     repo = "zebra";
-    rev = "4d6740a3cf1a679ed9e0ef53cdaa8dcd6026324b";
-    hash = "sha256-P9ze4bwi4Sq4NTUQCPIA3z6fMYxn4OFv2+PtSAL5qzc=";
+    rev = "2c8baf331a65ac25f1e58e9ce9ce832ee64de2e3";
+    hash = "sha256-f1+hW2fyFv53aWi1Ti7hGqKIou4L6wS64KrxG59eA/U=";
   };
 
-  cargoHash = "sha256-S4/nSnv28L/7QH9gWHJLfUUZSQ+uORhx1w764uArQB0=";
+  cargoHash = "sha256-UMGQdlKv1mKNpHpCk2lxiqqV9s29DkUN1VGKv72hGWo=";
 
   cargoBuildFlags = [ "--package" "zebrad" "--bin" "zebrad" ];
 
