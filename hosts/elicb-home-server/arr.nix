@@ -44,7 +44,7 @@
   services.lidarr   = { enable = true; group = "media"; };  # :8686
 
   services.bazarr   = { enable = true; group = "media"; };  # :6767
-  services.jellyseerr = { enable = true; };     # :5055
+  services.seerr = { enable = true; };          # :5055
 
   # === Recyclarr (TRaSH Guides quality profiles) ===
   # Timer-based service that syncs quality profiles from TRaSH Guides
@@ -136,7 +136,7 @@
   vpnNamespaces.wg = {
     enable = true;
     wireguardConfigFile = config.sops.secrets."airvpn/wireguard-conf".path;
-    accessibleFrom = [
+    allowedIngress = [
       "10.99.0.0/24"    # Nebula mesh network
       "127.0.0.1/32"    # localhost (radarr, sonarr, etc.)
     ];
@@ -144,13 +144,8 @@
       { from = 58846; to = 58846; protocol = "tcp"; }
       { from = 8112; to = 8112; protocol = "tcp"; }
     ];
-    openVPNPorts = [
-      { port = 24403; protocol = "both"; }
-      { port = 24404; protocol = "both"; }
-      { port = 24405; protocol = "both"; }
-      { port = 24406; protocol = "both"; }
-      { port = 24407; protocol = "both"; }
-    ];
+    vpn.allowedTCPPorts = [ 24403 24404 24405 24406 24407 ];
+    vpn.allowedUDPPorts = [ 24403 24404 24405 24406 24407 ];
   };
 
   # vpn-confinement strips MTU from wireguard config; apply AirVPN's required 1320 after namespace setup
