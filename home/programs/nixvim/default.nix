@@ -25,7 +25,8 @@
   extraPackages = with pkgs; [
     # Add linter packages needed by nvim-lint and formatters
     markdownlint-cli2
-    (python3.withPackages (ps: [ ps.mdformat-gfm ]))  # Markdown formatter with GFM table support
+    # mdformat plugins = GitHub syntax (bare gfm escapes `\` inside $math$ → corrupts source)
+    (python3.withPackages (ps: with ps; [ mdformat-gfm mdformat-myst mdformat-footnote mdformat-gfm-alerts ]))
     sqlfluff
     nixpkgs-fmt
     shfmt

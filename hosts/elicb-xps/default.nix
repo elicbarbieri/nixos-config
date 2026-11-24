@@ -24,11 +24,6 @@
   # nvidia-drm owning fbdev makes the restore reliable.
   boot.kernelParams = [ "nvidia_drm.fbdev=1" ];
 
-  # parallel stage-1, replaces the ~11.4s scripted initrd; gives per-unit initrd timing
-  # - takes effect on real reboot only, NOT `nixos-rebuild test`
-  # - on hang/black-screen: previous generation from the systemd-boot menu, drop this line
-  boot.initrd.systemd.enable = true;
-
   # no LVM in stage 1 (root = btrfs): initrd autoactivated ztest, switch-root killed its thin_check
   # mid-run → pool left inactive with thin_tmeta/thin_tdata active, topolvm dead until manual fix
   boot.initrd.services.lvm.enable = false;

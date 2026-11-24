@@ -125,7 +125,6 @@ in
       openFirewall = true;
     };
 
-    # Secrets management - required by GUI apps like atuin-desktop
     gnome.gnome-keyring.enable = true;
 
     # Logind configuration for lid switch handling
@@ -202,11 +201,6 @@ in
     keymapp  # ZSA keyboard configurator and flashing tool
     pinentry-rofi-themed
     brightnessctl
-
-    # Atuin Desktop & Keyring Deps
-    libsecret  # Provides secret-tool for keyring management
-    seahorse
-    atuin-desktop
 
     # Core GUI Apps (fast-moving: protocol/security churn)
     halloy
