@@ -11,7 +11,4 @@ hl.on("hyprland.start", function()
 
     -- Ax-Shell
     hl.exec_cmd("uwsm app -- ax-shell")
-
-    -- Screen-share border indicator (turns borders red while sharing)
-    hl.exec_cmd("~/.config/hypr/scripts/screencast-border.sh")
 end)

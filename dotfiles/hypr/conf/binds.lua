@@ -105,4 +105,4 @@ hl.bind("XF86Calculator", exec("uwsm app -- gnome-calculator"))
 
 -- ----- Lid switch -----
 hl.bind("switch:on:Lid Switch",  exec("hyprlock"),                 { locked = true })
-hl.bind("switch:off:Lid Switch", exec("hyprctl dispatch dpms on"), { locked = true })
+hl.bind("switch:off:Lid Switch", hl.dsp.dpms({ action = "on" }), { locked = true })

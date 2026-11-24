@@ -1,9 +1,23 @@
 # Gaming Specialization
 # Maximum performance configuration for gaming
-# Host-specific hardware overrides (like PRIME sync) should be in host config
+# Host-specific GPU wiring lives in host config + modules/desktop/nvidia-offload.nix
 
 { config, pkgs, lib, ... }:
 
+let
+  # dGPU scoped to launchers + their games (session-wide → every GTK4 app back on dGPU)
+  dgpuEnv = config.nvidiaOffload.env;
+  prismlauncherDgpu = pkgs.symlinkJoin {
+    inherit (pkgs.prismlauncher) name meta;
+    paths = [ pkgs.prismlauncher ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/prismlauncher ${
+        lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "--set ${n} ${lib.escapeShellArg v}") dgpuEnv)
+      }
+    '';
+  };
+in
 {
   # NVIDIA performance configuration
   hardware.nvidia = {
@@ -34,6 +48,7 @@
   # Steam configuration
   programs.steam = {
     enable = true;
+    package = pkgs.steam.override { extraEnv = dgpuEnv; };
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
     localNetworkGameTransfers.openFirewall = true;
@@ -45,9 +60,8 @@
     gamescope
     mangohud
 
-    prismlauncher
-
-    heroic
+    prismlauncherDgpu
+    (heroic.override { extraEnv = dgpuEnv; })
   ];
 
   programs.gamemode.enable = true;

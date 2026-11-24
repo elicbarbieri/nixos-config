@@ -42,8 +42,6 @@
 
     prime = {
       offload.enable = true;
-      offload.enableOffloadCmd = true;
-
       intelBusId = "PCI:0:2:0";
       nvidiaBusId = "PCI:1:0:0";
     };
@@ -61,15 +59,9 @@
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "iHD";
 
-    # Vulkan onto the iGPU (Intel Iris Xe RPL-P = 8086:a7a0), which drives eDP-1.
-    #
-    # - GTK4 picks the first enumerated device, no discrete/integrated preference; NVIDIA ICD
-    #   enumerates first → every GTK4 app renders on the dGPU + PRIME-copies each frame
-    # - that cross-GPU present stalls under Wayland (frozen UI until input), keeps dGPU awake
-    # - PRIME offload governs OpenGL/GLX only, does NOT affect Vulkan enumeration
-    # - trailing `!` enforces; without it the discrete GPU still wins
-    # - nvidia-offload overrides via __VK_LAYER_NV_optimus=NVIDIA_only, so games keep the dGPU
-    MESA_VK_DEVICE_SELECT = "8086:a7a0!";
+    # iGPU (eDP-1) first: GTK4 takes device 0 (dGPU → cross-GPU present stalls under Wayland)
+    # - no `!` (hides dGPU → nvidia-offload / DXVK land on iGPU)
+    MESA_VK_DEVICE_SELECT = "8086:a7a0";
   };
 
   networking.hostName = "elicb-xps";
@@ -176,12 +168,6 @@
       inheritParentConfig = true;
       configuration = {
         imports = [ ../../modules/specializations/gaming.nix ];
-
-        hardware.nvidia.prime = {
-          offload.enable = lib.mkForce false;
-          offload.enableOffloadCmd = lib.mkForce false;
-          sync.enable = lib.mkForce true;
-        };
 
         boot.kernelParams = [ "i915.enable_dc=0" ];
       };

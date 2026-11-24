@@ -30,7 +30,8 @@ if host == "elicb-dell-desktop" then
     -- Desktop: two external monitors.
     -- Primary: GIGA-BYTE M27Q (2560x1440@59.94)  |  Secondary: Sceptre F27
     hl.monitor({ output = "DP-1", mode = "2560x1440@59.94", position = "0x0",    scale = 1 })
-    hl.monitor({ output = "DP-3", mode = "1920x1080@60.00", position = "2560x0", scale = 1 })
+    local dp3 = { output = "DP-3", mode = "1920x1080@60.00", position = "2560x0", scale = 1 }
+    hl.monitor(dp3)
 
     -- Split workspaces across the two heads: 1-5 on the primary, 6-10 on the
     -- secondary. Only meaningful with two monitors, so desktop-only.
@@ -40,8 +41,12 @@ if host == "elicb-dell-desktop" then
     -- NVIDIA EDID/debugfs workaround: DP-3 needs a disable/re-enable cycle
     -- shortly after startup or it comes up wrong. Desktop-only (no DP-3 on the
     -- laptop, where this used to run pointlessly).
+    -- same-output hl.monitor() replaces the prior rule + schedules a monitor reload
     hl.on("hyprland.start", function()
-        hl.exec_cmd("sleep 3 && hyprctl keyword monitor 'DP-3,disable' && sleep 1 && hyprctl keyword monitor 'DP-3,1920x1080@60,2560x0,1'")
+        hl.timer(function()
+            hl.monitor({ output = "DP-3", disabled = true })
+            hl.timer(function() hl.monitor(dp3) end, { timeout = 1000, type = "oneshot" })
+        end, { timeout = 3000, type = "oneshot" })
     end)
 else
     -- Laptop (elicb-xps) and any other host: internal display is the anchor,

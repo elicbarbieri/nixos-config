@@ -23,5 +23,6 @@ require("conf.looknfeel")  -- general / decoration / animations / misc
 require("conf.input")      -- keyboard / mouse / touchpad
 require("conf.binds")      -- keybinds
 require("conf.rules")      -- window rules
+require("conf.screenshare") -- red borders while sharing, hide browser share bars
 require("conf.axshell")    -- Ax-Shell keybinds + helpers
 require("conf.autostart")  -- exec-once startup programs

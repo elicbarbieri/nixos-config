@@ -4,8 +4,6 @@
     # → pkgs.stable: heavy GUI/data pkgs + CUDA shell (no churn on unstable gcc/glibc bumps)
     # - no `follows` (independent slow-moving pin = the point)
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
-    hyprland.url = "github:hyprwm/Hyprland";
-    hyprland.inputs.nixpkgs.follows = "nixpkgs";
     ax-shell.url = "github:elicbarbieri/ax-shell";
     ax-shell.inputs.nixpkgs.follows = "nixpkgs";
     home-manager.url = "github:nix-community/home-manager";
@@ -26,7 +24,7 @@
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-stable, hyprland, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, zjstatus, nix-index-database, ... }:
+  outputs = { self, nixpkgs, nixpkgs-stable, ax-shell, home-manager, disko, nixvim, nix-flatpak, sops-nix, vpn-confinement, zjstatus, nix-index-database, ... }:
   let
     system = "x86_64-linux";
     stableOverlay = _: _: {
@@ -48,7 +46,7 @@
     # sops, home-manager). Keeps each host declaration to its distinct parts.
     mkHost = { host, hmProfile, extraModules ? [ ] }:
       nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit hyprland self ax-shell nixvim sops-nix; };
+        specialArgs = { inherit self ax-shell nixvim sops-nix; };
         modules = [
           {
             nixpkgs.hostPlatform = system;
@@ -77,7 +75,6 @@
     # (modules/desktop) to keep it out of the default closure.
     desktopModules = [
       ./modules/desktop
-      hyprland.nixosModules.default
       ax-shell.nixosModules.ax-shell
       nix-flatpak.nixosModules.nix-flatpak
     ];

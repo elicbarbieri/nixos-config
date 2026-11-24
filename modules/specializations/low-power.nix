@@ -67,12 +67,7 @@
   hardware.nvidia = lib.mkIf (config.hardware.nvidia.prime ? nvidiaBusId) {
     powerManagement.enable = lib.mkForce true;
     powerManagement.finegrained = lib.mkForce true;
-    
-    prime = {
-      offload.enable = lib.mkForce true;
-      offload.enableOffloadCmd = lib.mkForce true;
-      sync.enable = lib.mkForce false;
-    };
+    prime.offload.enable = lib.mkForce true;
   };
   
   boot.extraModprobeConfig = lib.mkIf (config.hardware.nvidia.prime ? nvidiaBusId) ''

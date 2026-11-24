@@ -27,6 +27,7 @@ in
 {
   imports = [
     ./sddm-theme.nix
+    ./nvidia-offload.nix
   ];
   # Ax-shell configuration - only the actual non-default settings needed
   programs.ax-shell = {
@@ -122,7 +123,6 @@ in
       enable = true;
       nssmdns4 = true;
       openFirewall = true;
-      publish.enable = false;
     };
 
     # Secrets management - required by GUI apps like atuin-desktop
