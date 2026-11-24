@@ -1,5 +1,5 @@
 # Zcash Foundation full node, built from source
-{ lib, rustPlatform, fetchFromGitHub, protobuf, targetCpu ? null }:
+{ lib, rustPlatform, fetchFromGitHub, protobuf, pkg-config, libgit2, targetCpu ? null }:
 
 rustPlatform.buildRustPackage rec {
   pname = "zebrad";
@@ -20,7 +20,9 @@ rustPlatform.buildRustPackage rec {
   cargoBuildFlags = [ "--package" "zebrad" "--bin" "zebrad" ];
 
   # librocksdb-sys + zcash_script: bundled C++ → bindgen; zebra-rpc: tonic → protoc
-  nativeBuildInputs = [ rustPlatform.bindgenHook protobuf ];
+  # libgit2-sys (vergen): cargoSetupHook sets LIBGIT2_NO_VENDOR=1 → system libgit2 via pkg-config
+  nativeBuildInputs = [ rustPlatform.bindgenHook protobuf pkg-config ];
+  buildInputs = [ libgit2 ];
 
   env = {
     PROTOC = lib.getExe protobuf;
